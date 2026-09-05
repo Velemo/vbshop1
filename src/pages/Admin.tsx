@@ -50,6 +50,50 @@ const Admin = () => {
   const [editing, setEditing] = useState<ProductForm | null>(null);
   const [stats, setStats] = useState({ total: 0, last24: 0, last7: 0, unique: 0 });
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
+  const [ad, setAd] = useState<AdForm>(emptyAd);
+  const [adSaving, setAdSaving] = useState(false);
+
+  const loadAd = async () => {
+    const { data } = await supabase.from("announcements").select("*")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (data) setAd({
+      id: (data as any).id,
+      media_url: (data as any).media_url || "",
+      media_type: (data as any).media_type || "image",
+      title: (data as any).title || "",
+      subtitle: (data as any).subtitle || "",
+      button_label: (data as any).button_label || "",
+      button_url: (data as any).button_url || "",
+      active: !!(data as any).active,
+    });
+  };
+
+  const onAdMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const url = await uploadImage(f);
+    if (url) setAd(a => ({ ...a, media_url: url, media_type: f.type.startsWith("video") ? "video" : "image" }));
+  };
+
+  const saveAd = async () => {
+    setAdSaving(true);
+    const payload = {
+      media_url: ad.media_url || null,
+      media_type: ad.media_type,
+      title: ad.title || null,
+      subtitle: ad.subtitle || null,
+      button_label: ad.button_label || null,
+      button_url: ad.button_url || null,
+      active: ad.active,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = ad.id
+      ? await supabase.from("announcements").update(payload).eq("id", ad.id)
+      : await supabase.from("announcements").insert(payload);
+    setAdSaving(false);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success("Anúncio salvo");
+    loadAd();
+  };
 
   const loadProducts = async () => {
     const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
