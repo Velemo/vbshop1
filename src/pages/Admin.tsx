@@ -185,10 +185,10 @@ const Admin = () => {
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border">
-          {(["products", "visits"] as Tab[]).map(t => (
+          {(["products", "visits", "ad"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {t === "products" ? "Produtos" : "Visitantes"}
+              {t === "products" ? "Produtos" : t === "visits" ? "Visitantes" : "Anúncio"}
             </button>
           ))}
         </div>
