@@ -50,7 +50,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/" className="text-xl font-display font-bold tracking-tight">vb_SHOP</Link>
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logoAsset.url} alt="Logótipo vb_SHOP" className="h-9 w-9 rounded-full object-cover vb-glow" />
+            <span className="text-xl font-display font-bold tracking-tight">vb_SHOP</span>
+          </Link>
+          <div className="flex-1" />
+          <Link to="/settings" className="p-2 rounded-lg hover:bg-secondary" aria-label="Definições">
+            <SettingsIcon size={18}/>
+          </Link>
           <div className="flex-1" />
           {session && (
             <Link to="/wishlist" className="p-2 rounded-lg hover:bg-secondary" aria-label="Desejos">
