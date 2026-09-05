@@ -106,3 +106,37 @@
   }
 }
 #lovable-badge {display: none !important;}
+
+/* ===== Modos do site ===== */
+@keyframes vb-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px hsl(190 100% 55% / 0.55)) drop-shadow(0 0 18px hsl(280 90% 60% / 0.35)); }
+  50% { filter: drop-shadow(0 0 14px hsl(100 90% 55% / 0.6)) drop-shadow(0 0 28px hsl(190 100% 55% / 0.45)); }
+}
+
+.mode-dinamico .vb-glow {
+  animation: vb-pulse 3.2s ease-in-out infinite;
+}
+
+.mode-dinamico .vb-cover::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, hsl(280 90% 60% / 0.35), hsl(190 100% 55% / 0.35), hsl(100 90% 55% / 0.35), hsl(280 90% 60% / 0.35));
+  animation: vb-spin 14s linear infinite;
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+@keyframes vb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.mode-dinamico .vb-cover > * { position: relative; z-index: 1; }
+
+.mode-normal .vb-glow { animation: none; filter: none; }
+.mode-normal .vb-cover::before { content: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-dinamico .vb-glow, .mode-dinamico .vb-cover::before { animation: none; }
+}
+

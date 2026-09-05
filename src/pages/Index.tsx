@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Heart, LogIn, LogOut, Shield, User as UserIcon } from "lucide-react";
+import { Search, Heart, LogIn, LogOut, Shield, User as UserIcon, Settings as SettingsIcon } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/lib/product";
 import { toast } from "sonner";
+import logoAsset from "@/assets/vb-shop-logo.png.asset.json";
+
 
 const Index = () => {
   const { session, isAdmin, signOut } = useAuth();
@@ -48,8 +50,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/" className="text-xl font-display font-bold tracking-tight">Virtuais</Link>
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logoAsset.url} alt="Logótipo vb_SHOP" className="h-9 w-9 rounded-full object-cover vb-glow" />
+            <span className="text-xl font-display font-bold tracking-tight">vb_SHOP</span>
+          </Link>
           <div className="flex-1" />
+          <Link to="/settings" className="p-2 rounded-lg hover:bg-secondary" aria-label="Definições">
+            <SettingsIcon size={18}/>
+          </Link>
           {session && (
             <Link to="/wishlist" className="p-2 rounded-lg hover:bg-secondary" aria-label="Desejos">
               <Heart size={18}/>
@@ -82,6 +90,19 @@ const Index = () => {
         </div>
       </header>
 
+      <section className="vb-cover relative overflow-hidden border-b border-border bg-[#05060a]">
+        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14 flex flex-col items-center text-center gap-4">
+          <img src={logoAsset.url} alt="Capa vb_SHOP — qualidade, confiança, rapidez"
+            className="w-40 h-40 sm:w-56 sm:h-56 rounded-full object-cover vb-glow" />
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight text-white">vb_SHOP</h1>
+            <p className="text-xs sm:text-sm text-white/70 mt-1 uppercase tracking-widest">Qualidade · Confiança · Rapidez</p>
+          </div>
+        </div>
+      </section>
+
+
+
       <main className="max-w-6xl mx-auto px-4 py-6">
         {!loading && products.length === 0 && (
           <div className="text-center py-20 text-muted-foreground">
@@ -105,7 +126,7 @@ const Index = () => {
       </main>
 
       <footer className="border-t border-border mt-12 py-6 text-center text-xs text-muted-foreground">
-        <p>© Virtuais · {new Date().getFullYear()}</p>
+        <p>© vb_SHOP · {new Date().getFullYear()}</p>
         {!session && (
           <Link to="/auth" className="inline-flex items-center gap-1 mt-2 text-foreground">
             <UserIcon size={12}/> Crie sua conta gratuita
