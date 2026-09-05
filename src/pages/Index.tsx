@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import { Product } from "@/lib/product";
 import { toast } from "sonner";
 import logoAsset from "@/assets/vb-shop-logo.png.asset.json";
+import AnnouncementHero from "@/components/AnnouncementHero";
 
 
 const Index = () => {
@@ -90,16 +91,8 @@ const Index = () => {
         </div>
       </header>
 
-      <section className="vb-cover relative overflow-hidden border-b border-border bg-[#05060a]">
-        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14 flex flex-col items-center text-center gap-4">
-          <img src={logoAsset.url} alt="Capa vb_SHOP — qualidade, confiança, rapidez"
-            className="w-40 h-40 sm:w-56 sm:h-56 rounded-full object-cover vb-glow" />
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight text-white">vb_SHOP</h1>
-            <p className="text-xs sm:text-sm text-white/70 mt-1 uppercase tracking-widest">Qualidade · Confiança · Rapidez</p>
-          </div>
-        </div>
-      </section>
+      <AnnouncementHero />
+
 
 
 

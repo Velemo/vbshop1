@@ -5,7 +5,20 @@ import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon } f
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 
-type Tab = "products" | "visits";
+type Tab = "products" | "visits" | "ad";
+
+type AdForm = {
+  id?: string;
+  media_url: string;
+  media_type: string;
+  title: string;
+  subtitle: string;
+  button_label: string;
+  button_url: string;
+  active: boolean;
+};
+
+const emptyAd: AdForm = { media_url: "", media_type: "image", title: "", subtitle: "", button_label: "", button_url: "", active: true };
 
 type ProductForm = {
   id?: string;
@@ -37,6 +50,50 @@ const Admin = () => {
   const [editing, setEditing] = useState<ProductForm | null>(null);
   const [stats, setStats] = useState({ total: 0, last24: 0, last7: 0, unique: 0 });
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
+  const [ad, setAd] = useState<AdForm>(emptyAd);
+  const [adSaving, setAdSaving] = useState(false);
+
+  const loadAd = async () => {
+    const { data } = await supabase.from("announcements").select("*")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (data) setAd({
+      id: (data as any).id,
+      media_url: (data as any).media_url || "",
+      media_type: (data as any).media_type || "image",
+      title: (data as any).title || "",
+      subtitle: (data as any).subtitle || "",
+      button_label: (data as any).button_label || "",
+      button_url: (data as any).button_url || "",
+      active: !!(data as any).active,
+    });
+  };
+
+  const onAdMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const url = await uploadImage(f);
+    if (url) setAd(a => ({ ...a, media_url: url, media_type: f.type.startsWith("video") ? "video" : "image" }));
+  };
+
+  const saveAd = async () => {
+    setAdSaving(true);
+    const payload = {
+      media_url: ad.media_url || null,
+      media_type: ad.media_type,
+      title: ad.title || null,
+      subtitle: ad.subtitle || null,
+      button_label: ad.button_label || null,
+      button_url: ad.button_url || null,
+      active: ad.active,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = ad.id
+      ? await supabase.from("announcements").update(payload).eq("id", ad.id)
+      : await supabase.from("announcements").insert(payload);
+    setAdSaving(false);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success("Anúncio salvo");
+    loadAd();
+  };
 
   const loadProducts = async () => {
     const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
@@ -62,7 +119,7 @@ const Admin = () => {
     setRecentVisits(recent.data || []);
   };
 
-  useEffect(() => { loadProducts(); loadVisits(); }, []);
+  useEffect(() => { loadProducts(); loadVisits(); loadAd(); }, []);
 
   const startEdit = (p?: Product) => {
     if (p) {
@@ -128,10 +185,10 @@ const Admin = () => {
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border">
-          {(["products", "visits"] as Tab[]).map(t => (
+          {(["products", "visits", "ad"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {t === "products" ? "Produtos" : "Visitantes"}
+              {t === "products" ? "Produtos" : t === "visits" ? "Visitantes" : "Anúncio"}
             </button>
           ))}
         </div>
@@ -192,7 +249,49 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {tab === "ad" && (
+          <div className="max-w-lg space-y-3">
+            <p className="text-sm text-muted-foreground">Este anúncio aparece no topo da loja, no lugar da capa com o logótipo.</p>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Imagem ou vídeo do anúncio</label>
+              {ad.media_url && (ad.media_type === "video"
+                ? <video src={ad.media_url} className="w-full max-w-xs rounded-lg" controls muted />
+                : <img src={ad.media_url} className="w-full max-w-xs rounded-lg object-cover" />)}
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-xs font-medium cursor-pointer hover:bg-accent">
+                <Upload size={12}/> Enviar ficheiro
+                <input type="file" accept="image/*,video/*" className="hidden" onChange={onAdMedia}/>
+              </label>
+            </div>
+
+            {[
+              { k: "title", label: "Título (opcional)" },
+              { k: "subtitle", label: "Subtítulo (opcional)" },
+              { k: "button_label", label: "Nome do botão (ex: Ver mais)" },
+              { k: "button_url", label: "Link do botão (https://...)" },
+            ].map(f => (
+              <div key={f.k} className="space-y-1">
+                <label className="text-xs font-medium">{f.label}</label>
+                <input value={(ad as any)[f.k]}
+                  onChange={e => setAd({ ...ad, [f.k]: e.target.value } as AdForm)}
+                  className="w-full p-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+              </div>
+            ))}
+
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={ad.active} onChange={e => setAd({ ...ad, active: e.target.checked })}/>
+              Mostrar anúncio no site
+            </label>
+
+            <button onClick={saveAd} disabled={adSaving}
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60">
+              {adSaving ? "A guardar..." : "Salvar anúncio"}
+            </button>
+          </div>
+        )}
       </main>
+
 
       {/* Editor modal */}
       {editing && (
