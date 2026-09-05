@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import { Product } from "@/lib/product";
 import { toast } from "sonner";
 import logoAsset from "@/assets/vb-shop-logo.png.asset.json";
+import AnnouncementHero from "@/components/AnnouncementHero";
 
 
 const Index = () => {
