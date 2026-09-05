@@ -249,7 +249,49 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {tab === "ad" && (
+          <div className="max-w-lg space-y-3">
+            <p className="text-sm text-muted-foreground">Este anúncio aparece no topo da loja, no lugar da capa com o logótipo.</p>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Imagem ou vídeo do anúncio</label>
+              {ad.media_url && (ad.media_type === "video"
+                ? <video src={ad.media_url} className="w-full max-w-xs rounded-lg" controls muted />
+                : <img src={ad.media_url} className="w-full max-w-xs rounded-lg object-cover" />)}
+              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-xs font-medium cursor-pointer hover:bg-accent">
+                <Upload size={12}/> Enviar ficheiro
+                <input type="file" accept="image/*,video/*" className="hidden" onChange={onAdMedia}/>
+              </label>
+            </div>
+
+            {[
+              { k: "title", label: "Título (opcional)" },
+              { k: "subtitle", label: "Subtítulo (opcional)" },
+              { k: "button_label", label: "Nome do botão (ex: Ver mais)" },
+              { k: "button_url", label: "Link do botão (https://...)" },
+            ].map(f => (
+              <div key={f.k} className="space-y-1">
+                <label className="text-xs font-medium">{f.label}</label>
+                <input value={(ad as any)[f.k]}
+                  onChange={e => setAd({ ...ad, [f.k]: e.target.value } as AdForm)}
+                  className="w-full p-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+              </div>
+            ))}
+
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={ad.active} onChange={e => setAd({ ...ad, active: e.target.checked })}/>
+              Mostrar anúncio no site
+            </label>
+
+            <button onClick={saveAd} disabled={adSaving}
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60">
+              {adSaving ? "A guardar..." : "Salvar anúncio"}
+            </button>
+          </div>
+        )}
       </main>
+
 
       {/* Editor modal */}
       {editing && (
