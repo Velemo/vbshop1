@@ -119,7 +119,7 @@ const Admin = () => {
     setRecentVisits(recent.data || []);
   };
 
-  useEffect(() => { loadProducts(); loadVisits(); }, []);
+  useEffect(() => { loadProducts(); loadVisits(); loadAd(); }, []);
 
   const startEdit = (p?: Product) => {
     if (p) {
