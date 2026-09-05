@@ -58,7 +58,6 @@ const Index = () => {
           <Link to="/settings" className="p-2 rounded-lg hover:bg-secondary" aria-label="Definições">
             <SettingsIcon size={18}/>
           </Link>
-          <div className="flex-1" />
           {session && (
             <Link to="/wishlist" className="p-2 rounded-lg hover:bg-secondary" aria-label="Desejos">
               <Heart size={18}/>
