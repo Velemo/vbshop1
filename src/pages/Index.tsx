@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Heart, LogIn, LogOut, Shield, User as UserIcon } from "lucide-react";
+import { Search, Heart, LogIn, LogOut, Shield, User as UserIcon, Settings as SettingsIcon } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/lib/product";
 import { toast } from "sonner";
+import logoAsset from "@/assets/vb-shop-logo.png.asset.json";
+
 
 const Index = () => {
   const { session, isAdmin, signOut } = useAuth();
