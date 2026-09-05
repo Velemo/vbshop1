@@ -5,7 +5,20 @@ import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon } f
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 
-type Tab = "products" | "visits";
+type Tab = "products" | "visits" | "ad";
+
+type AdForm = {
+  id?: string;
+  media_url: string;
+  media_type: string;
+  title: string;
+  subtitle: string;
+  button_label: string;
+  button_url: string;
+  active: boolean;
+};
+
+const emptyAd: AdForm = { media_url: "", media_type: "image", title: "", subtitle: "", button_label: "", button_url: "", active: true };
 
 type ProductForm = {
   id?: string;
