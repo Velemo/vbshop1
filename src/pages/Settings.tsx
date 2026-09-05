@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Square, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, Square, Check, Shield } from "lucide-react";
 import { useSettings, SiteMode } from "@/contexts/SettingsContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const options: { value: SiteMode; title: string; desc: string; icon: typeof Sparkles }[] = [
@@ -20,6 +21,7 @@ const options: { value: SiteMode; title: string; desc: string; icon: typeof Spar
 
 const Settings = () => {
   const { mode, setMode } = useSettings();
+  const { isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,6 +54,19 @@ const Settings = () => {
             </button>
           );
         })}
+
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className="w-full text-left flex gap-3 items-center p-4 rounded-2xl border border-border bg-card hover:bg-secondary/60 transition"
+          >
+            <span className="p-2 rounded-xl bg-primary/10 text-primary"><Shield size={18} /></span>
+            <span className="flex-1">
+              <span className="block font-display font-semibold text-sm">Painel ADM</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">Gerir produtos e anúncios da loja.</span>
+            </span>
+          </Link>
+        )}
       </main>
     </div>
   );
