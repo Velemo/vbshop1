@@ -48,7 +48,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/" className="text-xl font-display font-bold tracking-tight">Virtuais</Link>
+          <Link to="/" className="text-xl font-display font-bold tracking-tight">vb_SHOP</Link>
           <div className="flex-1" />
           {session && (
             <Link to="/wishlist" className="p-2 rounded-lg hover:bg-secondary" aria-label="Desejos">
@@ -105,7 +105,7 @@ const Index = () => {
       </main>
 
       <footer className="border-t border-border mt-12 py-6 text-center text-xs text-muted-foreground">
-        <p>© Virtuais · {new Date().getFullYear()}</p>
+        <p>© vb_SHOP · {new Date().getFullYear()}</p>
         {!session && (
           <Link to="/auth" className="inline-flex items-center gap-1 mt-2 text-foreground">
             <UserIcon size={12}/> Crie sua conta gratuita

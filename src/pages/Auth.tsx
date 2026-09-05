@@ -49,7 +49,7 @@ const Auth = () => {
       <div className="flex-1 grid place-items-center">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-display font-bold tracking-tight">Virtuais</h1>
+            <h1 className="text-4xl font-display font-bold tracking-tight">vb_SHOP</h1>
             <p className="text-sm text-muted-foreground">
               {mode === "signup" ? "Crie sua conta para favoritar e avaliar produtos" : "Entre na sua conta"}
             </p>
