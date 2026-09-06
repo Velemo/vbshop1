@@ -177,7 +177,10 @@ const Admin = () => {
     if (!editing) return;
     const files = Array.from(e.target.files || []);
     const urls: string[] = [];
-    for (const f of files) { const u = await uploadImage(f); if (u) urls.push(u); }
+    for (let i = 0; i < files.length; i++) {
+      const u = await uploadImage(files[i], `A carregar ${i + 1}/${files.length}`);
+      if (u) urls.push(u);
+    }
     setEditing({ ...editing, gallery: [...editing.gallery, ...urls] });
   };
 
