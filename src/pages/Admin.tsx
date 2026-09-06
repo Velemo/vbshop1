@@ -299,6 +299,22 @@ const Admin = () => {
         )}
       </main>
 
+      {progress && (
+        <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur grid place-items-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm p-5 space-y-3">
+            <p className="text-sm font-medium truncate">{progress.label}</p>
+            <div className="h-2.5 w-full rounded-full bg-secondary overflow-hidden">
+              <div className="h-full bg-primary transition-all duration-200" style={{ width: `${progress.percent}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              {progress.percent}% {progress.percent >= 100 ? "— a finalizar..." : "carregado"}
+            </p>
+          </div>
+        </div>
+      )}
+
+
+
 
       {/* Editor modal */}
       {editing && (
