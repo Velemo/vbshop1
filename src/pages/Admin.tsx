@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon } from "lucide-react";
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
+import { uploadWithProgress } from "@/lib/upload";
 
 type Tab = "products" | "visits" | "ad";
 
@@ -35,15 +36,6 @@ type ProductForm = {
 
 const empty: ProductForm = { name: "", description: "", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "" };
 
-const uploadImage = async (file: File): Promise<string | null> => {
-  const ext = file.name.split(".").pop();
-  const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("products").upload(path, file, { upsert: false });
-  if (error) { toast.error("Erro ao enviar imagem"); return null; }
-  const { data } = supabase.storage.from("products").getPublicUrl(path);
-  return data.publicUrl;
-};
-
 const Admin = () => {
   const [tab, setTab] = useState<Tab>("products");
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,6 +44,18 @@ const Admin = () => {
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
   const [ad, setAd] = useState<AdForm>(emptyAd);
   const [adSaving, setAdSaving] = useState(false);
+  const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
+
+  const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
+    setProgress({ label: `${label}: ${file.name}`, percent: 0 });
+    const { url, error } = await uploadWithProgress("products", file, (percent) =>
+      setProgress({ label: `${label}: ${file.name}`, percent }),
+    );
+    setProgress(null);
+    if (error) { toast.error(error); return null; }
+    toast.success("Ficheiro carregado");
+    return url;
+  };
 
   const loadAd = async () => {
     const { data } = await supabase.from("announcements").select("*")
