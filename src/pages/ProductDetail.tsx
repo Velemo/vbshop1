@@ -37,7 +37,7 @@ const ProductDetail = () => {
     if (!data) return;
     const p = data as Product;
     setProduct(p);
-    setActiveImg(p.image_url);
+    setActiveImg(p.image_url || (Array.isArray(p.gallery) ? p.gallery.find((image): image is string => typeof image === "string" && !!image) : null) || null);
     const { data: rv } = await supabase.from("reviews").select("*").eq("product_id", id).order("created_at", { ascending: false });
     setReviews((rv as Review[]) || []);
     if (session) {
@@ -53,8 +53,8 @@ const ProductDetail = () => {
   if (!product) return <div className="min-h-screen grid place-items-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"/></div>;
 
   const { price, promo, original } = activePrice(product);
-  const gallery: string[] = Array.isArray(product.gallery) ? product.gallery : [];
-  const allImages = [product.image_url, ...gallery].filter(Boolean) as string[];
+  const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
+  const allImages = [product.image_url, ...gallery].filter((image): image is string => typeof image === "string" && !!image);
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
 
   const toggleWish = async () => {
@@ -97,29 +97,29 @@ const ProductDetail = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-5 space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden">
-              {activeImg ? <img src={activeImg} alt={product.name} className="w-full h-full object-cover"/> : null}
+      <main className="max-w-5xl mx-auto px-4 py-5 pb-28 space-y-6 min-w-0">
+        <div className="grid md:grid-cols-2 gap-6 min-w-0">
+          <div className="min-w-0 space-y-3">
+            <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden grid place-items-center">
+              {activeImg ? <img src={activeImg} alt={product.name} className="block w-full h-full object-contain"/> : null}
               <button onClick={toggleWish}
                 className="absolute top-3 right-3 p-2.5 rounded-full bg-background/90 backdrop-blur shadow">
                 <Heart size={18} className={inWishlist ? "fill-destructive text-destructive" : ""}/>
               </button>
             </div>
             {allImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="flex w-full max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-2" aria-label="Imagens do produto">
                 {allImages.map((img, i) => (
-                  <button key={i} onClick={() => setActiveImg(img)}
-                    className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${activeImg===img?"border-primary":"border-transparent"}`}>
-                    <img src={img} alt="" className="w-full h-full object-cover"/>
+                  <button key={i} onClick={() => setActiveImg(img)} aria-label={`Ver imagem ${i + 1} de ${allImages.length}`} aria-pressed={activeImg === img}
+                    className={`shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 bg-muted ${activeImg===img?"border-primary":"border-transparent"}`}>
+                    <img src={img} alt="" loading="lazy" className="w-full h-full object-contain"/>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4 break-words">
             <div>
               <h1 className="text-2xl font-display font-bold">{product.name}</h1>
               {reviews.length > 0 && (
@@ -130,7 +130,7 @@ const ProductDetail = () => {
               )}
             </div>
 
-            <div className="flex items-baseline gap-3">
+             <div className="flex flex-wrap items-baseline gap-3">
               <span className="text-3xl font-display font-bold">{formatMt(price)}</span>
               {promo && <span className="text-base text-muted-foreground line-through">{formatMt(original)}</span>}
             </div>

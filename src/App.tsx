@@ -14,6 +14,9 @@ import ProductDetail from "./pages/ProductDetail";
 import Wishlist from "./pages/Wishlist";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import BottomNav from "./components/BottomNav";
+import Profile from "./pages/Profile";
+import Roleta from "./pages/Roleta";
 
 const queryClient = new QueryClient();
 
@@ -55,9 +58,12 @@ const App = () => (
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/perfil" element={<Profile />} />
+              <Route path="/roleta" element={<Roleta />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <BottomNav />
           </AuthProvider>
         </BrowserRouter>
       </SettingsProvider>
