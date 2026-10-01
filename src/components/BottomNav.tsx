@@ -11,9 +11,8 @@ const BottomNav = () => (
   <nav aria-label="Navegação principal" className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
     <div className="mx-auto flex max-w-lg items-stretch justify-around">
       {links.map(({ to, label, icon: Icon, end }) => (
-        <NavLink key={to} to={to} end={end} className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-semibold transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-          <Icon size={21} aria-hidden="true" />
-          <span>{label}</span>
+        <NavLink key={to} to={to} end={end} aria-label={label} title={label} className={({ isActive }) => `flex min-w-0 flex-1 items-center justify-center h-14 transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+          <Icon size={23} aria-hidden="true" />
         </NavLink>
       ))}
     </div>

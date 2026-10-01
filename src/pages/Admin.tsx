@@ -170,18 +170,29 @@ const Admin = () => {
   };
 
   const onMainImg = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]; if (!f || !editing) return;
-    const url = await uploadImage(f); if (url) setEditing({ ...editing, image_url: url });
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    const urls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const url = await uploadImage(files[i], `A carregar ${i + 1}/${files.length}`);
+      if (url) urls.push(url);
+    }
+    if (urls.length) setEditing(current => current ? {
+      ...current,
+      image_url: urls[0],
+      gallery: [...current.gallery, ...urls.slice(1)],
+    } : current);
   };
   const onGallery = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!editing) return;
     const files = Array.from(e.target.files || []);
+    e.target.value = "";
     const urls: string[] = [];
     for (let i = 0; i < files.length; i++) {
       const u = await uploadImage(files[i], `A carregar ${i + 1}/${files.length}`);
       if (u) urls.push(u);
     }
-    setEditing({ ...editing, gallery: [...editing.gallery, ...urls] });
+    if (urls.length) setEditing(current => current ? { ...current, gallery: [...current.gallery, ...urls] } : current);
   };
 
   return (
@@ -326,11 +337,11 @@ const Admin = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium">Imagem principal</label>
+               <label className="text-xs font-medium">Imagens do produto (a primeira será a principal)</label>
               {editing.image_url && <img src={editing.image_url} className="w-24 h-24 rounded-lg object-cover"/>}
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-xs font-medium cursor-pointer hover:bg-accent">
                 <Upload size={12}/> Enviar
-                <input type="file" accept="image/*" className="hidden" onChange={onMainImg}/>
+                 <input type="file" accept="image/*" multiple className="hidden" onChange={onMainImg}/>
               </label>
             </div>
 
