@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Heart, LogIn, LogOut, Shield, User as UserIcon, Settings as SettingsIcon } from "lucide-react";
+import { Search } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/lib/product";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import AnnouncementHero from "@/components/AnnouncementHero";
 
 
 const Index = () => {
-  const { session, isAdmin, signOut } = useAuth();
+  const { session, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
@@ -49,33 +49,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-xl font-display font-bold">MARCHA vb</span>
-          </Link>
-          <div className="flex-1" />
-          <Link to="/settings" className="p-2 rounded-lg hover:bg-secondary" aria-label="Definições">
-            <SettingsIcon size={18}/>
-          </Link>
-          {session && (
-            <Link to="/wishlist" className="p-2 rounded-lg hover:bg-secondary" aria-label="Desejos">
-              <Heart size={18}/>
-            </Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin" className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-secondary hover:bg-accent">
-              <Shield size={14}/> Admin
-            </Link>
-          )}
-          {session ? (
-            <button onClick={signOut} className="p-2 rounded-lg hover:bg-secondary" aria-label="Sair"><LogOut size={18}/></button>
-          ) : (
-            <Link to="/auth" className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90">
-              <LogIn size={14}/> Entrar
-            </Link>
-          )}
-        </div>
-        <div className="max-w-6xl mx-auto px-4 pb-3">
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
             <input
@@ -116,14 +90,6 @@ const Index = () => {
         )}
       </main>
 
-      <footer className="border-t border-border mt-12 py-6 pb-28 text-center text-xs text-muted-foreground">
-        <p>© MARCHA vb · {new Date().getFullYear()}</p>
-        {!session && (
-          <Link to="/auth" className="inline-flex items-center gap-1 mt-2 text-foreground">
-            <UserIcon size={12}/> Crie sua conta gratuita
-          </Link>
-        )}
-      </footer>
     </div>
   );
 };
