@@ -6,7 +6,6 @@ import { Search, Heart, LogIn, LogOut, Shield, User as UserIcon, Settings as Set
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/lib/product";
 import { toast } from "sonner";
-import logoAsset from "@/assets/vb-shop-logo.png.asset.json";
 import AnnouncementHero from "@/components/AnnouncementHero";
 
 
@@ -52,8 +51,7 @@ const Index = () => {
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logoAsset.url} alt="Logótipo vb_SHOP" className="h-9 w-9 rounded-full object-cover vb-glow" />
-            <span className="text-xl font-display font-bold tracking-tight">vb_SHOP</span>
+            <span className="text-xl font-display font-bold">MARCHA vb</span>
           </Link>
           <div className="flex-1" />
           <Link to="/settings" className="p-2 rounded-lg hover:bg-secondary" aria-label="Definições">
@@ -118,8 +116,8 @@ const Index = () => {
         )}
       </main>
 
-      <footer className="border-t border-border mt-12 py-6 text-center text-xs text-muted-foreground">
-        <p>© vb_SHOP · {new Date().getFullYear()}</p>
+      <footer className="border-t border-border mt-12 py-6 pb-28 text-center text-xs text-muted-foreground">
+        <p>© MARCHA vb · {new Date().getFullYear()}</p>
         {!session && (
           <Link to="/auth" className="inline-flex items-center gap-1 mt-2 text-foreground">
             <UserIcon size={12}/> Crie sua conta gratuita

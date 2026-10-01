@@ -31,10 +31,10 @@ const AnnouncementHero = () => {
     return (
       <section className="vb-cover relative overflow-hidden border-b border-border bg-[#05060a]">
         <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14 flex flex-col items-center text-center gap-4">
-          <img src={logoAsset.url} alt="Capa vb_SHOP — qualidade, confiança, rapidez"
+          <img src={logoAsset.url} alt="Capa da loja — qualidade, confiança, rapidez"
             className="w-40 h-40 sm:w-56 sm:h-56 rounded-full object-cover vb-glow" />
           <div>
-            <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight text-white">vb_SHOP</h1>
+            <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight text-white">MARCHA vb</h1>
             <p className="text-xs sm:text-sm text-white/70 mt-1 uppercase tracking-widest">Qualidade · Confiança · Rapidez</p>
           </div>
         </div>
@@ -49,7 +49,7 @@ const AnnouncementHero = () => {
           <video src={ad.media_url} className="w-full max-w-3xl rounded-2xl object-cover max-h-[420px]"
             autoPlay muted loop playsInline controls />
         ) : (
-          <img src={ad.media_url} alt={ad.title || "Anúncio vb_SHOP"}
+          <img src={ad.media_url} alt={ad.title || "Anúncio MARCHA vb"}
             className="w-full max-w-3xl rounded-2xl object-cover max-h-[420px]" />
         )}
         {(ad.title || ad.subtitle) && (
