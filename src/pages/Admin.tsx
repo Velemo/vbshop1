@@ -6,7 +6,9 @@ import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
 
-type Tab = "products" | "visits" | "ad";
+type Tab = "products" | "visits" | "ad" | "roleta" | "codes";
+type Slot = { position: number; image_url: string | null; label: string };
+type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
 
 type AdForm = {
   id?: string;
@@ -44,6 +46,9 @@ const Admin = () => {
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
   const [ad, setAd] = useState<AdForm>(emptyAd);
   const [adSaving, setAdSaving] = useState(false);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [codes, setCodes] = useState<Code[]>([]);
+  const [codeAmount, setCodeAmount] = useState("10");
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
@@ -123,7 +128,40 @@ const Admin = () => {
     setRecentVisits(recent.data || []);
   };
 
-  useEffect(() => { loadProducts(); loadVisits(); loadAd(); }, []);
+  const loadSlots = async () => {
+    const { data } = await (supabase as any).from("roulette_slots").select("*").order("position");
+    setSlots(data || []);
+  };
+  const loadCodes = async () => {
+    const { data } = await (supabase as any).from("recharge_codes").select("*").order("created_at", { ascending: false }).limit(100);
+    setCodes(data || []);
+  };
+  const saveSlot = async (sl: Slot) => {
+    const { error } = await (supabase as any).from("roulette_slots").update({ image_url: sl.image_url, label: sl.label, updated_at: new Date().toISOString() }).eq("position", sl.position);
+    if (error) toast.error("Erro: " + error.message); else toast.success(`Quadrado ${sl.position + 1} salvo`);
+  };
+  const onSlotImg = async (position: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+    const url = await uploadImage(f);
+    if (!url) return;
+    const next = slots.map(s => s.position === position ? { ...s, image_url: url } : s);
+    setSlots(next);
+    saveSlot(next.find(s => s.position === position)!);
+  };
+  const genCode = async () => {
+    const amount = Number(codeAmount);
+    if (!(amount > 0) || amount > 100000) { toast.error("Valor inválido"); return; }
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const rnd = crypto.getRandomValues(new Uint32Array(12));
+    const code = "VB-" + Array.from(rnd, n => chars[n % chars.length]).join("").replace(/(.{4})(?=.)/g, "$1-");
+    const { error } = await (supabase as any).from("recharge_codes").insert({ code, amount });
+    if (error) { toast.error("Erro: " + error.message); return; }
+    navigator.clipboard?.writeText(code).catch(() => {});
+    toast.success(`Código ${code} criado e copiado`);
+    loadCodes();
+  };
+
+  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); }, []);
 
   const startEdit = (p?: Product) => {
     if (p) {
@@ -202,11 +240,11 @@ const Admin = () => {
           <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-secondary"><ArrowLeft size={18}/></Link>
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
-        <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border">
-          {(["products", "visits", "ad"] as Tab[]).map(t => (
+        <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
+          {(["products", "visits", "ad", "roleta", "codes"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {t === "products" ? "Produtos" : t === "visits" ? "Visitantes" : "Anúncio"}
+              className={`px-3 py-2.5 text-sm whitespace-nowrap font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
+              {({ products: "Produtos", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$" } as Record<Tab, string>)[t]}
             </button>
           ))}
         </div>
@@ -306,6 +344,50 @@ const Admin = () => {
               className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60">
               {adSaving ? "A guardar..." : "Salvar anúncio"}
             </button>
+          </div>
+        )}
+        {tab === "roleta" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Coloque uma imagem e o nome do prémio em cada um dos 10 quadrados da roleta (o 1 fica no topo, seguindo no sentido do relógio).</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {slots.map(sl => (
+                <div key={sl.position} className="bg-card border border-border rounded-xl p-2 space-y-2">
+                  <p className="text-xs font-semibold">Quadrado {sl.position + 1}</p>
+                  <label className="block aspect-square rounded-lg border-2 border-dashed border-border bg-muted cursor-pointer overflow-hidden grid place-items-center hover:border-primary">
+                    {sl.image_url ? <img src={sl.image_url} className="size-full object-contain" /> : <Upload size={18} className="text-muted-foreground" />}
+                    <input type="file" accept="image/*" className="hidden" onChange={e => onSlotImg(sl.position, e)} />
+                  </label>
+                  <input value={sl.label} maxLength={60} placeholder="Nome do prémio"
+                    onChange={e => setSlots(slots.map(s => s.position === sl.position ? { ...s, label: e.target.value } : s))}
+                    onBlur={() => saveSlot(sl)}
+                    className="w-full p-1.5 rounded-md bg-background border border-border text-xs" />
+                  {sl.image_url && <button onClick={() => { const n = { ...sl, image_url: null }; setSlots(slots.map(s => s.position === sl.position ? n : s)); saveSlot(n); }} className="text-xs text-destructive">Remover imagem</button>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab === "codes" && (
+          <div className="max-w-lg space-y-4">
+            <p className="text-sm text-muted-foreground">Gere um código e envie ao cliente. Ele resgata no Perfil e o valor entra no saldo vb$.</p>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <label className="text-xs font-medium">Valor (vb$)</label>
+                <input type="number" min="0.01" step="0.01" value={codeAmount} onChange={e => setCodeAmount(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
+              </div>
+              <button onClick={genCode} className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Gerar código</button>
+            </div>
+            <div className="space-y-1.5">
+              {codes.map(c => (
+                <div key={c.id} className="bg-card border border-border rounded-lg p-2.5 text-sm flex items-center gap-2">
+                  <button className="font-mono truncate" onClick={() => { navigator.clipboard?.writeText(c.code); toast.success("Copiado"); }}>{c.code}</button>
+                  <span className="ml-auto shrink-0">{Number(c.amount).toFixed(2)} vb$</span>
+                  <span className={`text-xs shrink-0 ${c.redeemed_by ? "text-muted-foreground" : "text-primary"}`}>{c.redeemed_by ? "usado" : "livre"}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>

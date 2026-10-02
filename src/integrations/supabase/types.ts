@@ -128,6 +128,33 @@ export type Database = {
         }
         Relationships: []
       }
+      recharge_codes: {
+        Row: {
+          amount: number
+          code: string
+          created_at: string
+          id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+        }
+        Insert: {
+          amount: number
+          code: string
+          created_at?: string
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+        }
+        Update: {
+          amount?: number
+          code?: string
+          created_at?: string
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string
@@ -165,6 +192,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      roulette_slots: {
+        Row: {
+          image_url: string | null
+          label: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          image_url?: string | null
+          label?: string
+          position: number
+          updated_at?: string
+        }
+        Update: {
+          image_url?: string | null
+          label?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roulette_spins: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          label: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          label?: string
+          position: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          label?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       site_visits: {
         Row: {
@@ -208,6 +283,30 @@ export type Database = {
         }
         Relationships: []
       }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          tickets: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          tickets?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          tickets?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wishlists: {
         Row: {
           created_at: string
@@ -242,6 +341,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      buy_tickets: { Args: { _qty: number }; Returns: undefined }
+      global_spins: {
+        Args: never
+        Returns: {
+          created_at: string
+          image_url: string
+          label: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -249,6 +357,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      redeem_code: { Args: { _code: string }; Returns: number }
+      spin_roulette: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"

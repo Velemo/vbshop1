@@ -23,6 +23,10 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        roulette: {
+          DEFAULT: "hsl(var(--roulette))",
+          foreground: "hsl(var(--roulette-foreground))",
+        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
