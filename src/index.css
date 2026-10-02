@@ -14,6 +14,8 @@
     --popover-foreground: 220 20% 10%;
 
     --primary: 220 70% 50%;
+    --roulette: 48 96% 53%;
+    --roulette-foreground: 220 20% 10%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 15% 93%;
@@ -59,6 +61,8 @@
     --popover-foreground: 0 0% 98%;
 
     --primary: 220 70% 60%;
+    --roulette: 48 96% 53%;
+    --roulette-foreground: 220 20% 10%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 15% 18%;
