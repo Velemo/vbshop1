@@ -1,0 +1,1 @@
+export const isVideo = (url: string) => /\.(mp4|webm|mov|m4v|ogg)(?:[?#]|$)/i.test(url);

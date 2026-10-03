@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      prize_mail: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          label: string
+          position: number
+          prize_link: string | null
+          prize_text: string
+          prize_video_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          label?: string
+          position: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          label?: string
+          position?: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string
@@ -193,23 +232,67 @@ export type Database = {
           },
         ]
       }
+      roulette_prize_content: {
+        Row: {
+          created_at: string
+          position: number
+          prize_link: string | null
+          prize_text: string
+          prize_video_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          position: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          position?: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roulette_prize_content_position_fkey"
+            columns: ["position"]
+            isOneToOne: true
+            referencedRelation: "roulette_slots"
+            referencedColumns: ["position"]
+          },
+        ]
+      }
       roulette_slots: {
         Row: {
           image_url: string | null
           label: string
           position: number
+          prize_link: string | null
+          prize_text: string
+          prize_video_url: string | null
           updated_at: string
         }
         Insert: {
           image_url?: string | null
           label?: string
           position: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
           updated_at?: string
         }
         Update: {
           image_url?: string | null
           label?: string
           position?: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
           updated_at?: string
         }
         Relationships: []

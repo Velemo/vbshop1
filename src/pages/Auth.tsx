@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 const Auth = () => {
   const { session, loading } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -23,17 +22,8 @@ const Auth = () => {
     }
     setBusy(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email, password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Conta criada!");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Erro ao autenticar");
     } finally {
@@ -51,7 +41,7 @@ const Auth = () => {
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-display font-bold">MARCHA vb</h1>
             <p className="text-sm text-muted-foreground">
-              {mode === "signup" ? "Crie sua conta para favoritar e avaliar produtos" : "Entre na sua conta"}
+              Entre na sua conta existente
             </p>
           </div>
           <form onSubmit={submit} className="space-y-3">
@@ -69,13 +59,9 @@ const Auth = () => {
             </div>
             <button type="submit" disabled={busy}
               className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50">
-              {busy ? "..." : mode === "signup" ? "Criar conta" : "Entrar"}
+              {busy ? "..." : "Entrar"}
             </button>
           </form>
-          <button onClick={()=>setMode(mode==="signup"?"signin":"signup")}
-            className="w-full text-sm text-muted-foreground hover:text-foreground">
-            {mode === "signup" ? "Já tem conta? Entrar" : "Nova aqui? Criar conta"}
-          </button>
         </div>
       </div>
     </div>

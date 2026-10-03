@@ -30,7 +30,7 @@ const Profile = () => {
         </div>
       </div>
       {!session ? (
-        <Button asChild className="mt-6 w-full"><Link to="/auth">Entrar ou criar conta</Link></Button>
+        <Button asChild className="mt-6 w-full"><Link to="/auth">Entrar</Link></Button>
       ) : (
         <div className="mt-6 space-y-1">
           <div className="rounded-2xl border-2 border-roulette p-4 mb-4">

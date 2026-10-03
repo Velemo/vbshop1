@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Heart, MessageCircle, Star, Trash2 } from "lucide-react";
 import { Product, activePrice, formatMt, whatsappLink } from "@/lib/product";
 import { toast } from "sonner";
+import { isVideo } from "@/lib/media";
 
 type Review = { id: string; user_id: string; rating: number; comment: string; created_at: string };
 
@@ -101,7 +102,7 @@ const ProductDetail = () => {
         <div className="grid md:grid-cols-2 gap-6 min-w-0">
           <div className="min-w-0 space-y-3">
             <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden grid place-items-center">
-              {activeImg ? <img src={activeImg} alt={product.name} className="block w-full h-full object-contain"/> : null}
+              {activeImg ? isVideo(activeImg) ? <video key={activeImg} src={activeImg} controls playsInline preload="metadata" className="block w-full h-full object-contain" /> : <img src={activeImg} alt={product.name} className="block w-full h-full object-contain"/> : null}
               <button onClick={toggleWish}
                 className="absolute top-3 right-3 p-2.5 rounded-full bg-background/90 backdrop-blur shadow">
                 <Heart size={18} className={inWishlist ? "fill-destructive text-destructive" : ""}/>
@@ -112,7 +113,7 @@ const ProductDetail = () => {
                 {allImages.map((img, i) => (
                   <button key={i} onClick={() => setActiveImg(img)} aria-label={`Ver imagem ${i + 1} de ${allImages.length}`} aria-pressed={activeImg === img}
                     className={`shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 bg-muted ${activeImg===img?"border-primary":"border-transparent"}`}>
-                    <img src={img} alt="" loading="lazy" className="w-full h-full object-contain"/>
+                    {isVideo(img) ? <span className="relative block size-full"><video src={img} muted preload="metadata" className="size-full object-contain" /><span className="absolute inset-0 grid place-items-center text-xs font-bold bg-background/30">▶</span></span> : <img src={img} alt="" loading="lazy" className="w-full h-full object-contain"/>}
                   </button>
                 ))}
               </div>
@@ -168,7 +169,7 @@ const ProductDetail = () => {
             </div>
           ) : (
             <div className="bg-card border border-border rounded-xl p-4 text-center text-sm">
-              <Link to="/auth" className="text-primary font-semibold">Crie uma conta</Link> para dar estrelas e comentar.
+              <Link to="/auth" className="text-primary font-semibold">Entre na sua conta</Link> para dar estrelas e comentar.
             </div>
           )}
 

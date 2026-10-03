@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import Profile from "./pages/Profile";
 import Roleta from "./pages/Roleta";
+import Correio from "./pages/Correio";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/perfil" element={<Profile />} />
               <Route path="/roleta" element={<Roleta />} />
+              <Route path="/correio" element={<Correio />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
