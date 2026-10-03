@@ -59,7 +59,7 @@ const ProductDetail = () => {
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
 
   const toggleWish = async () => {
-    if (!session) { toast.error("Crie conta para favoritar"); navigate("/auth"); return; }
+    if (!session) { toast.error("Entre para favoritar"); navigate("/auth"); return; }
     if (inWishlist) {
       await supabase.from("wishlists").delete().eq("user_id", session.user.id).eq("product_id", product.id);
       setInWishlist(false);
