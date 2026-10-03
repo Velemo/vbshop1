@@ -47,8 +47,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
+    <div className="h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] flex flex-col overflow-hidden bg-background">
+      <header className="shrink-0 sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
@@ -63,12 +63,9 @@ const Index = () => {
         </div>
       </header>
 
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <AnnouncementHero />
-
-
-
-
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className="max-w-6xl mx-auto px-4 py-6 pb-20">
         {!loading && products.length === 0 && (
           <div className="text-center py-20 text-muted-foreground">
             <p className="text-sm">Nenhum produto ainda.</p>
@@ -89,6 +86,7 @@ const Index = () => {
           </div>
         )}
       </main>
+      </div>
 
     </div>
   );

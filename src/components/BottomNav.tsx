@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Store, Disc3, UserRound } from "lucide-react";
+import { Store, Disc3, Mail, UserRound } from "lucide-react";
 
 const links = [
   { to: "/", label: "Loja", icon: Store, end: true },
   { to: "/roleta", label: "ROLETA", icon: Disc3, end: false },
+  { to: "/correio", label: "Correio", icon: Mail, end: false },
   { to: "/perfil", label: "PERFIL", icon: UserRound, end: false },
 ];
 

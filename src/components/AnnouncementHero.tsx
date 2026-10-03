@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/vb-shop-logo.png.asset.json";
 
 export type Announcement = {
   id: string;
@@ -27,20 +26,7 @@ const AnnouncementHero = () => {
       .then(({ data }) => setAd((data as Announcement) || null));
   }, []);
 
-  if (!ad || !ad.media_url) {
-    return (
-      <section className="vb-cover relative overflow-hidden border-b border-border bg-[#05060a]">
-        <div className="max-w-6xl mx-auto px-4 py-10 sm:py-14 flex flex-col items-center text-center gap-4">
-          <img src={logoAsset.url} alt="Capa da loja — qualidade, confiança, rapidez"
-            className="w-40 h-40 sm:w-56 sm:h-56 rounded-full object-cover vb-glow" />
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight text-white">MARCHA vb</h1>
-            <p className="text-xs sm:text-sm text-white/70 mt-1 uppercase tracking-widest">Qualidade · Confiança · Rapidez</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  if (!ad || !ad.media_url) return null;
 
   return (
     <section className="relative overflow-hidden border-b border-border bg-[#05060a]">
