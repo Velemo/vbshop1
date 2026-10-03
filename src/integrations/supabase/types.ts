@@ -232,6 +232,41 @@ export type Database = {
           },
         ]
       }
+      roulette_prize_content: {
+        Row: {
+          created_at: string
+          position: number
+          prize_link: string | null
+          prize_text: string
+          prize_video_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          position: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          position?: number
+          prize_link?: string | null
+          prize_text?: string
+          prize_video_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roulette_prize_content_position_fkey"
+            columns: ["position"]
+            isOneToOne: true
+            referencedRelation: "roulette_slots"
+            referencedColumns: ["position"]
+          },
+        ]
+      }
       roulette_slots: {
         Row: {
           image_url: string | null
