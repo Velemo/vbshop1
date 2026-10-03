@@ -1,0 +1,1 @@
+ALTER TABLE public.roulette_slots DROP COLUMN prize_text, DROP COLUMN prize_link, DROP COLUMN prize_video_url;

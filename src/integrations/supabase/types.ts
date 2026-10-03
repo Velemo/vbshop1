@@ -272,27 +272,18 @@ export type Database = {
           image_url: string | null
           label: string
           position: number
-          prize_link: string | null
-          prize_text: string
-          prize_video_url: string | null
           updated_at: string
         }
         Insert: {
           image_url?: string | null
           label?: string
           position: number
-          prize_link?: string | null
-          prize_text?: string
-          prize_video_url?: string | null
           updated_at?: string
         }
         Update: {
           image_url?: string | null
           label?: string
           position?: number
-          prize_link?: string | null
-          prize_text?: string
-          prize_video_url?: string | null
           updated_at?: string
         }
         Relationships: []
