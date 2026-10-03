@@ -5,9 +5,11 @@ import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon } f
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
+import { isVideo } from "@/lib/media";
 
 type Tab = "products" | "visits" | "ad" | "roleta" | "codes";
 type Slot = { position: number; image_url: string | null; label: string };
+type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
 type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
 
 type AdForm = {
@@ -47,6 +49,7 @@ const Admin = () => {
   const [ad, setAd] = useState<AdForm>(emptyAd);
   const [adSaving, setAdSaving] = useState(false);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [prizes, setPrizes] = useState<Record<number, PrizeContent>>({});
   const [codes, setCodes] = useState<Code[]>([]);
   const [codeAmount, setCodeAmount] = useState("10");
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
@@ -131,6 +134,8 @@ const Admin = () => {
   const loadSlots = async () => {
     const { data } = await (supabase as any).from("roulette_slots").select("*").order("position");
     setSlots(data || []);
+    const { data: details } = await (supabase as any).from("roulette_prize_content").select("position,prize_text,prize_link,prize_video_url");
+    setPrizes(Object.fromEntries((details || []).map((detail: PrizeContent) => [detail.position, detail])));
   };
   const loadCodes = async () => {
     const { data } = await (supabase as any).from("recharge_codes").select("*").order("created_at", { ascending: false }).limit(100);
@@ -140,13 +145,30 @@ const Admin = () => {
     const { error } = await (supabase as any).from("roulette_slots").update({ image_url: sl.image_url, label: sl.label, updated_at: new Date().toISOString() }).eq("position", sl.position);
     if (error) toast.error("Erro: " + error.message); else toast.success(`Quadrado ${sl.position + 1} salvo`);
   };
+  const updatePrize = (position: number, changes: Partial<PrizeContent>) => {
+    setPrizes(current => ({ ...current, [position]: { position, prize_text: "", prize_link: "", prize_video_url: "", ...current[position], ...changes } }));
+  };
+  const savePrize = async (position: number, changes?: Partial<PrizeContent>) => {
+    const prize = { position, prize_text: "", prize_link: "", prize_video_url: "", ...prizes[position], ...changes };
+    const link = prize.prize_link.trim();
+    if (link && !/^https?:\/\//i.test(link)) { toast.error("O link deve começar com https:// ou http://"); return; }
+    const { error } = await (supabase as any).from("roulette_prize_content").upsert({ position, prize_text: prize.prize_text, prize_link: link || null, prize_video_url: prize.prize_video_url || null });
+    if (error) toast.error("Erro: " + error.message); else toast.success(`Conteúdo do quadrado ${position + 1} salvo`);
+  };
+  const onPrizeVideo = async (position: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    const url = await uploadImage(file);
+    if (url) { updatePrize(position, { prize_video_url: url }); await savePrize(position, { prize_video_url: url }); }
+  };
   const onSlotImg = async (position: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
     const url = await uploadImage(f);
     if (!url) return;
     const next = slots.map(s => s.position === position ? { ...s, image_url: url } : s);
     setSlots(next);
-    saveSlot(next.find(s => s.position === position)!);
+    const updated = next.find(s => s.position === position);
+    if (updated) saveSlot(updated);
   };
   const genCode = async () => {
     const amount = Number(codeAmount);
@@ -262,7 +284,7 @@ const Admin = () => {
             <div className="space-y-2">
               {products.map(p => (
                 <div key={p.id} className="bg-card border border-border rounded-xl p-3 flex gap-3 items-center">
-                  {p.image_url ? <img src={p.image_url} className="w-14 h-14 rounded-lg object-cover"/> : <div className="w-14 h-14 rounded-lg bg-muted grid place-items-center"><ImageIcon size={18} className="text-muted-foreground"/></div>}
+                  {p.image_url ? isVideo(p.image_url) ? <video src={p.image_url} className="w-14 h-14 rounded-lg object-contain" muted preload="metadata"/> : <img src={p.image_url} className="w-14 h-14 rounded-lg object-cover"/> : <div className="w-14 h-14 rounded-lg bg-muted grid place-items-center"><ImageIcon size={18} className="text-muted-foreground"/></div>}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{p.name}</p>
                     <p className="text-xs text-muted-foreground">{formatMt(Number(p.price))} · Estoque {p.stock}</p>
@@ -308,7 +330,7 @@ const Admin = () => {
 
         {tab === "ad" && (
           <div className="max-w-lg space-y-3">
-            <p className="text-sm text-muted-foreground">Este anúncio aparece no topo da loja, no lugar da capa com o logótipo.</p>
+            <p className="text-sm text-muted-foreground">Quando ativo, este anúncio aparece no topo da loja.</p>
 
             <div className="space-y-2">
               <label className="text-xs font-medium">Imagem ou vídeo do anúncio</label>
@@ -362,6 +384,14 @@ const Admin = () => {
                     onBlur={() => saveSlot(sl)}
                     className="w-full p-1.5 rounded-md bg-background border border-border text-xs" />
                   {sl.image_url && <button onClick={() => { const n = { ...sl, image_url: null }; setSlots(slots.map(s => s.position === sl.position ? n : s)); saveSlot(n); }} className="text-xs text-destructive">Remover imagem</button>}
+                  <textarea value={prizes[sl.position]?.prize_text || ""} maxLength={4000} rows={3} placeholder="Texto enviado ao vencedor" aria-label={`Texto do prémio ${sl.position + 1}`}
+                    onChange={e => updatePrize(sl.position, { prize_text: e.target.value })} className="w-full p-1.5 rounded-md bg-background border border-border text-xs" />
+                  <input type="url" value={prizes[sl.position]?.prize_link || ""} placeholder="Link https://..." aria-label={`Link do prémio ${sl.position + 1}`}
+                    onChange={e => updatePrize(sl.position, { prize_link: e.target.value })} className="w-full p-1.5 rounded-md bg-background border border-border text-xs" />
+                  {prizes[sl.position]?.prize_video_url && <video src={prizes[sl.position].prize_video_url} controls preload="metadata" className="w-full aspect-video object-contain rounded-md" />}
+                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-primary"><Upload size={12} /> Vídeo do prémio<input type="file" accept="video/*" className="hidden" onChange={e => onPrizeVideo(sl.position, e)} /></label>
+                  {prizes[sl.position]?.prize_video_url && <button onClick={() => { updatePrize(sl.position, { prize_video_url: "" }); savePrize(sl.position, { prize_video_url: "" }); }} className="text-xs text-destructive">Remover vídeo</button>}
+                  <button onClick={() => savePrize(sl.position)} className="w-full p-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold">Guardar conteúdo</button>
                 </div>
               ))}
             </div>
@@ -419,27 +449,27 @@ const Admin = () => {
             </div>
 
             <div className="space-y-2">
-               <label className="text-xs font-medium">Imagens do produto (a primeira será a principal)</label>
-              {editing.image_url && <img src={editing.image_url} className="w-24 h-24 rounded-lg object-cover"/>}
+               <label className="text-xs font-medium">Imagens e vídeos do produto (o primeiro será o principal)</label>
+              {editing.image_url && (isVideo(editing.image_url) ? <video src={editing.image_url} controls preload="metadata" className="w-24 h-24 rounded-lg object-contain"/> : <img src={editing.image_url} className="w-24 h-24 rounded-lg object-cover"/>)}
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-xs font-medium cursor-pointer hover:bg-accent">
                 <Upload size={12}/> Enviar
-                 <input type="file" accept="image/*" multiple className="hidden" onChange={onMainImg}/>
+                 <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={onMainImg}/>
               </label>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium">Imagens de detalhes (galeria)</label>
+              <label className="text-xs font-medium">Imagens e vídeos de detalhes (galeria)</label>
               <div className="flex flex-wrap gap-2">
                 {editing.gallery.map((g, i) => (
                   <div key={i} className="relative">
-                    <img src={g} className="w-16 h-16 rounded-lg object-cover"/>
+                    {isVideo(g) ? <video src={g} muted preload="metadata" className="w-16 h-16 rounded-lg object-contain" /> : <img src={g} className="w-16 h-16 rounded-lg object-cover"/>}
                     <button onClick={() => setEditing({ ...editing, gallery: editing.gallery.filter((_, j) => j !== i) })}
                       className="absolute -top-1 -right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground"><X size={10}/></button>
                   </div>
                 ))}
                 <label className="w-16 h-16 rounded-lg border-2 border-dashed border-border grid place-items-center cursor-pointer hover:border-primary">
                   <Upload size={14} className="text-muted-foreground"/>
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={onGallery}/>
+                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={onGallery}/>
                 </label>
               </div>
             </div>

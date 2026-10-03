@@ -35,7 +35,7 @@ const Index = () => {
   }, [products, q]);
 
   const toggleWishlist = async (productId: string) => {
-    if (!session) { toast.error("Crie conta para favoritar"); navigate("/auth"); return; }
+    if (!session) { toast.error("Entre para favoritar"); navigate("/auth"); return; }
     if (wishlist.has(productId)) {
       await supabase.from("wishlists").delete().eq("user_id", session.user.id).eq("product_id", productId);
       const n = new Set(wishlist); n.delete(productId); setWishlist(n);

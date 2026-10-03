@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { Product, activePrice, formatMt } from "@/lib/product";
+import { isVideo } from "@/lib/media";
 
 type Props = {
   product: Product;
@@ -14,6 +15,7 @@ const ProductCard = ({ product, inWishlist, onToggleWishlist }: Props) => {
     <div className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all">
       <Link to={`/product/${product.id}`} className="block relative aspect-square bg-muted overflow-hidden">
         {product.image_url ? (
+          isVideo(product.image_url) ? <video src={product.image_url} muted playsInline preload="metadata" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" /> :
           <img src={product.image_url} alt={product.name} loading="lazy"
                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"/>
         ) : (
