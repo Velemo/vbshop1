@@ -52,6 +52,7 @@ const App = () => (
       <SettingsProvider>
         <BrowserRouter>
           <AuthProvider>
+            <div className="h-dvh flex flex-col overflow-hidden bg-background">
             <VisitTracker />
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <Routes>
@@ -68,6 +69,7 @@ const App = () => (
             </Routes>
             </div>
             <BottomNav />
+            </div>
           </AuthProvider>
         </BrowserRouter>
       </SettingsProvider>

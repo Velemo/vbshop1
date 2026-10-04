@@ -6,11 +6,14 @@ import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
 import { isVideo } from "@/lib/media";
+import { Button } from "@/components/ui/button";
 
 type Tab = "products" | "visits" | "ad" | "roleta" | "codes";
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
 type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
+type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null };
+const blankDelivery = (): Delivery => ({ content_text: "", content_link: "", media_url: "" });
 
 type AdForm = {
   id?: string;
@@ -36,9 +39,10 @@ type ProductForm = {
   promo_ends_at: string;
   stock: string;
   seller_whatsapp: string;
+  deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "" };
+const empty: ProductForm = { name: "", description: "", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", deliveries: [] };
 
 const Admin = () => {
   const [tab, setTab] = useState<Tab>("products");
@@ -53,6 +57,8 @@ const Admin = () => {
   const [codes, setCodes] = useState<Code[]>([]);
   const [codeAmount, setCodeAmount] = useState("10");
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
+  const [available, setAvailable] = useState<Record<string, number>>({});
+  const [savingProduct, setSavingProduct] = useState(false);
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
     setProgress({ label: `${label}: ${file.name}`, percent: 0 });
@@ -110,6 +116,11 @@ const Admin = () => {
   const loadProducts = async () => {
     const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
     setProducts((data as Product[]) || []);
+    const { data: contents } = await supabase.from("product_contents").select("product_id,delivered_at").is("delivered_at", null);
+    setAvailable((contents || []).reduce<Record<string, number>>((counts, row) => {
+      counts[row.product_id] = (counts[row.product_id] || 0) + 1;
+      return counts;
+    }, {}));
   };
 
   const loadVisits = async () => {
@@ -185,8 +196,10 @@ const Admin = () => {
 
   useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); }, []);
 
-  const startEdit = (p?: Product) => {
+  const startEdit = async (p?: Product) => {
     if (p) {
+      const { data, error } = await supabase.from("product_contents").select("delivery_order,product_id,content_text,content_link,media_url,delivered_at").eq("product_id", p.id).order("delivery_order");
+      if (error) { toast.error("Não foi possível carregar os conteúdos"); return; }
       setEditing({
         id: p.id, name: p.name, description: p.description,
         image_url: p.image_url || "",
@@ -194,15 +207,20 @@ const Admin = () => {
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
         promo_ends_at: p.promo_ends_at ? p.promo_ends_at.slice(0, 16) : "",
         stock: String(p.stock), seller_whatsapp: p.seller_whatsapp,
+        deliveries: (data || []).map(d => ({ ...d, content_link: d.content_link || "", media_url: d.media_url || "" })),
       });
     } else setEditing({ ...empty });
   };
 
   const save = async () => {
-    if (!editing) return;
+    if (!editing || savingProduct) return;
     if (!editing.name.trim() || !editing.price || !editing.seller_whatsapp) {
       toast.error("Nome, preço e WhatsApp são obrigatórios"); return;
     }
+    if (editing.deliveries.some(d => !d.delivered_at && (!d.content_text.trim() && !d.content_link.trim() && !d.media_url.trim() || d.content_link && !/^https?:\/\//i.test(d.content_link)))) {
+      toast.error("Cada entrega precisa de texto, link válido ou ficheiro"); return;
+    }
+    setSavingProduct(true);
     const payload = {
       name: editing.name.trim(),
       description: editing.description,
@@ -214,10 +232,19 @@ const Admin = () => {
       stock: parseInt(editing.stock) || 0,
       seller_whatsapp: editing.seller_whatsapp.trim(),
     };
-    let error;
-    if (editing.id) ({ error } = await supabase.from("products").update(payload).eq("id", editing.id));
-    else ({ error } = await supabase.from("products").insert(payload));
-    if (error) { toast.error("Erro: " + error.message); return; }
+    const result = editing.id
+      ? await supabase.from("products").update(payload).eq("id", editing.id).select("id").single()
+      : await supabase.from("products").insert(payload).select("id").single();
+    if (result.error || !result.data) { toast.error("Erro: " + (result.error?.message || "Produto indisponível")); setSavingProduct(false); return; }
+    const pending = editing.deliveries.filter(d => !d.delivered_at);
+    for (const d of pending) {
+      const row = { product_id: result.data.id, content_text: d.content_text.trim(), content_link: d.content_link.trim() || null, media_url: d.media_url || null };
+      const { error } = d.delivery_order
+        ? await supabase.from("product_contents").update(row).eq("delivery_order", d.delivery_order).is("delivered_at", null)
+        : await supabase.from("product_contents").insert(row);
+      if (error) { toast.error("Produto guardado, mas falhou uma entrega: " + error.message); setSavingProduct(false); loadProducts(); return; }
+    }
+    setSavingProduct(false);
     toast.success("Produto salvo");
     setEditing(null);
     loadProducts();
@@ -255,6 +282,23 @@ const Admin = () => {
     if (urls.length) setEditing(current => current ? { ...current, gallery: [...current.gallery, ...urls] } : current);
   };
 
+  const updateDelivery = (index: number, changes: Partial<Delivery>) => setEditing(current => current ? ({ ...current, deliveries: current.deliveries.map((d, i) => i === index ? { ...d, ...changes } : d) }) : current);
+  const removeDelivery = async (index: number) => {
+    const delivery = editing?.deliveries[index];
+    if (!delivery || delivery.delivered_at) return;
+    if (delivery.delivery_order) {
+      const { error } = await supabase.from("product_contents").delete().eq("delivery_order", delivery.delivery_order).is("delivered_at", null);
+      if (error) { toast.error(error.message); return; }
+    }
+    setEditing(current => current ? { ...current, deliveries: current.deliveries.filter((_, i) => i !== index) } : current);
+  };
+  const onDeliveryMedia = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file || !/^(video|image)\//.test(file.type)) return;
+    const url = await uploadImage(file);
+    if (url) updateDelivery(index, { media_url: url });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 bg-background/85 backdrop-blur border-b border-border">
@@ -287,7 +331,8 @@ const Admin = () => {
                   {p.image_url ? isVideo(p.image_url) ? <video src={p.image_url} className="w-14 h-14 rounded-lg object-contain" muted preload="metadata"/> : <img src={p.image_url} className="w-14 h-14 rounded-lg object-cover"/> : <div className="w-14 h-14 rounded-lg bg-muted grid place-items-center"><ImageIcon size={18} className="text-muted-foreground"/></div>}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatMt(Number(p.price))} · Estoque {p.stock}</p>
+                    <p className="text-xs text-muted-foreground">{formatMt(Number(p.price))} · Estoque {p.stock} · Entregas livres {available[p.id] || 0}</p>
+                    {p.stock > 0 && !available[p.id] && <p className="text-xs text-destructive">Sem conteúdos para entrega em vb$</p>}
                   </div>
                   <button onClick={() => startEdit(p)} className="p-2 rounded-lg hover:bg-secondary"><Pencil size={14}/></button>
                   <button onClick={() => remove(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive"><Trash2 size={14}/></button>
@@ -499,9 +544,28 @@ const Admin = () => {
               </div>
             ))}
 
+            <section className="space-y-3 border-t border-border pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-display font-semibold">Conteúdo depois do pagamento · Full Entregas</h3>
+                <Button type="button" size="sm" variant="outline" onClick={() => setEditing({ ...editing, deliveries: [...editing.deliveries, blankDelivery()] })}><Plus size={16} className="mr-1"/> Adicionar</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Uma entrega diferente por compra, na ordem abaixo. 1 vb$ = 85 Mt.</p>
+              {editing.deliveries.map((d, i) => (
+                <div key={d.delivery_order || `new-${i}`} className="border-b border-border pb-3 space-y-2">
+                  <div className="flex justify-between text-sm font-medium"><span>Entrega {i + 1} {d.delivered_at ? "· usada" : "· disponível"}</span>
+                    {!d.delivered_at && <Button type="button" size="icon" variant="ghost" aria-label={`Remover entrega ${i + 1}`} onClick={() => removeDelivery(i)}><Trash2 size={15}/></Button>}
+                  </div>
+                  <textarea aria-label={`Texto da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={4000} rows={2} value={d.content_text} onChange={e => updateDelivery(i, { content_text: e.target.value })} placeholder="Texto da entrega" className="w-full p-2 border border-border rounded-md bg-background text-sm" />
+                  <input aria-label={`Link da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={2048} type="url" value={d.content_link} onChange={e => updateDelivery(i, { content_link: e.target.value })} placeholder="Link https://..." className="w-full p-2 border border-border rounded-md bg-background text-sm" />
+                  {d.media_url && (isVideo(d.media_url) ? <video src={d.media_url} controls className="w-full max-h-40 object-contain" /> : <img src={d.media_url} alt="Conteúdo" className="w-full max-h-40 object-contain" />)}
+                  {!d.delivered_at && <label className="flex items-center gap-2 text-sm text-primary cursor-pointer"><Upload size={16}/> Carregar imagem ou vídeo<input type="file" accept="image/*,video/*" className="hidden" onChange={e => onDeliveryMedia(i, e)}/></label>}
+                </div>
+              ))}
+            </section>
+
             <div className="flex gap-2 pt-2">
               <button onClick={() => setEditing(null)} className="flex-1 py-2.5 rounded-lg bg-secondary text-sm font-semibold">Cancelar</button>
-              <button onClick={save} className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Salvar</button>
+              <Button onClick={save} disabled={savingProduct} className="flex-1">{savingProduct ? "A guardar..." : "Salvar"}</Button>
             </div>
           </div>
         </div>
