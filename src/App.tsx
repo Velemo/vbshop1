@@ -53,6 +53,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <VisitTracker />
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </div>
             <BottomNav />
           </AuthProvider>
         </BrowserRouter>
