@@ -52,7 +52,9 @@ const App = () => (
       <SettingsProvider>
         <BrowserRouter>
           <AuthProvider>
+            <div className="h-dvh flex flex-col overflow-hidden bg-background">
             <VisitTracker />
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -65,7 +67,9 @@ const App = () => (
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </div>
             <BottomNav />
+            </div>
           </AuthProvider>
         </BrowserRouter>
       </SettingsProvider>

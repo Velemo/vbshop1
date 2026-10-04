@@ -6,6 +6,8 @@ import { ArrowLeft, Heart, MessageCircle, Star, Trash2 } from "lucide-react";
 import { Product, activePrice, formatMt, whatsappLink } from "@/lib/product";
 import { toast } from "sonner";
 import { isVideo } from "@/lib/media";
+import { useWallet, formatVb } from "@/hooks/useWallet";
+import { Button } from "@/components/ui/button";
 
 type Review = { id: string; user_id: string; rating: number; comment: string; created_at: string };
 
@@ -31,6 +33,8 @@ const ProductDetail = () => {
   const [myRating, setMyRating] = useState(0);
   const [myComment, setMyComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const { balance, refresh } = useWallet();
 
   const load = async () => {
     if (!id) return;
@@ -54,9 +58,22 @@ const ProductDetail = () => {
   if (!product) return <div className="min-h-screen grid place-items-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"/></div>;
 
   const { price, promo, original } = activePrice(product);
+  const vbPrice = Math.round(price / 85 * 100) / 100;
   const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
   const allImages = [product.image_url, ...gallery].filter((image): image is string => typeof image === "string" && !!image);
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
+
+  const buyWithVb = async () => {
+    if (!session) { navigate("/auth"); return; }
+    if (purchasing) return;
+    setPurchasing(true);
+    const { error } = await supabase.rpc("buy_product_vb", { _product_id: product.id });
+    setPurchasing(false);
+    if (error) { toast.error(error.message); return; }
+    await refresh();
+    toast.success("Pagamento concluído. Conteúdo entregue no Correio.");
+    navigate("/correio");
+  };
 
   const toggleWish = async () => {
     if (!session) { toast.error("Entre para favoritar"); navigate("/auth"); return; }
@@ -139,6 +156,14 @@ const ProductDetail = () => {
             <p className="text-sm text-muted-foreground">
               {product.stock > 0 ? `${product.stock} disponíveis` : "Esgotado"}
             </p>
+
+            <div className="space-y-2">
+              <p className="text-sm">{formatVb(vbPrice)} <span className="text-muted-foreground">· 1 vb$ = 85 Mt</span></p>
+              {session && <p className="text-xs text-muted-foreground">Saldo: {formatVb(balance)}</p>}
+              <Button className="w-full" disabled={purchasing || product.stock < 1 || vbPrice <= 0} onClick={buyWithVb}>
+                {purchasing ? "A pagar..." : `Pagar com vb$ · ${formatVb(vbPrice)}`}
+              </Button>
+            </div>
 
             {product.description && (
               <p className="text-sm whitespace-pre-wrap text-foreground/90">{product.description}</p>

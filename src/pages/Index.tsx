@@ -47,7 +47,7 @@ const Index = () => {
   };
 
   return (
-    <div className="h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] flex flex-col overflow-hidden bg-background">
+    <div className="h-full flex flex-col overflow-hidden bg-background">
       <header className="shrink-0 sticky top-0 z-30 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="relative">

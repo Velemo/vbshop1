@@ -6,21 +6,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isVideo } from "@/lib/media";
 
 type PrizeMail = { id: string; label: string; image_url: string | null; prize_text: string; prize_link: string | null; prize_video_url: string | null; created_at: string };
+type ProductMail = { id: string; product_name: string; paid_vb: number; content_text: string; content_link: string | null; media_url: string | null; created_at: string };
 
 const Correio = () => {
   const { session, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<PrizeMail[]>([]);
+  const [purchases, setPurchases] = useState<ProductMail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!session) { setMessages([]); setLoading(false); return; }
+    if (!session) { setMessages([]); setPurchases([]); setLoading(false); return; }
     setLoading(true);
-    (supabase as any).from("prize_mail").select("id,label,image_url,prize_text,prize_link,prize_video_url,created_at")
-      .eq("user_id", session.user.id).order("created_at", { ascending: false })
-      .then(({ data, error }: { data: PrizeMail[] | null; error: unknown }) => {
-        setMessages(data || []); setError(!!error); setLoading(false);
-      });
+    Promise.all([
+      supabase.from("prize_mail").select("id,label,image_url,prize_text,prize_link,prize_video_url,created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
+      supabase.from("product_mail").select("id,product_name,paid_vb,content_text,content_link,media_url,created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
+    ]).then(([prizes, products]) => {
+      setMessages(prizes.data || []); setPurchases(products.data || []); setError(!!prizes.error || !!products.error); setLoading(false);
+    });
   }, [session?.user.id]);
 
   return (
@@ -29,8 +32,15 @@ const Correio = () => {
       {authLoading || loading ? <p className="mt-8 text-sm text-muted-foreground">A carregar...</p>
         : !session ? <div className="mt-8 text-sm"><Link to="/auth" className="text-primary font-semibold">Entrar</Link> para ver o seu Correio.</div>
         : error ? <p className="mt-8 text-sm text-destructive">Não foi possível carregar o Correio.</p>
-        : messages.length === 0 ? <p className="mt-8 text-sm text-muted-foreground">Ainda não há mensagens.</p>
-        : <div className="mt-6 space-y-4">{messages.map(message => (
+        : messages.length + purchases.length === 0 ? <p className="mt-8 text-sm text-muted-foreground">Ainda não há mensagens.</p>
+        : <div className="mt-6 space-y-4">
+          {purchases.map(item => <article key={item.id} className="border-b border-border py-4 space-y-3">
+            <div><h2 className="font-semibold break-words">{item.product_name}</h2><p className="text-xs text-muted-foreground">Compra · {Number(item.paid_vb).toFixed(2)} vb$ · {new Date(item.created_at).toLocaleString("pt-MZ")}</p></div>
+            {item.content_text && <p className="text-sm whitespace-pre-wrap break-words">{item.content_text}</p>}
+            {item.media_url && (isVideo(item.media_url) ? <video src={item.media_url} controls playsInline preload="metadata" className="w-full max-h-80 object-contain" /> : <img src={item.media_url} alt="Conteúdo da compra" className="w-full max-h-80 object-contain" />)}
+            {item.content_link && /^https?:\/\//i.test(item.content_link) && <a href={item.content_link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline break-all">Abrir conteúdo</a>}
+          </article>)}
+          {messages.map(message => (
           <article key={message.id} className="border-b border-border py-4 space-y-3">
             <div className="flex items-center gap-3">
               {message.image_url ? <img src={message.image_url} alt="" className="size-14 shrink-0 rounded-md bg-muted object-contain" /> : <Gift className="text-muted-foreground" size={32} />}
