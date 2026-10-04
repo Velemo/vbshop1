@@ -92,6 +92,107 @@ export type Database = {
         }
         Relationships: []
       }
+      product_contents: {
+        Row: {
+          content_link: string | null
+          content_text: string
+          created_at: string
+          delivered_at: string | null
+          delivered_to: string | null
+          delivery_order: number
+          media_url: string | null
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          content_link?: string | null
+          content_text?: string
+          created_at?: string
+          delivered_at?: string | null
+          delivered_to?: string | null
+          delivery_order?: never
+          media_url?: string | null
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          content_link?: string | null
+          content_text?: string
+          created_at?: string
+          delivered_at?: string | null
+          delivered_to?: string | null
+          delivery_order?: never
+          media_url?: string | null
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_contents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_mail: {
+        Row: {
+          content_link: string | null
+          content_order: number
+          content_text: string
+          created_at: string
+          id: string
+          media_url: string | null
+          paid_vb: number
+          product_id: string
+          product_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_link?: string | null
+          content_order: number
+          content_text?: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          paid_vb: number
+          product_id: string
+          product_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_link?: string | null
+          content_order?: number
+          content_text?: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          paid_vb?: number
+          product_id?: string
+          product_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_mail_content_order_fkey"
+            columns: ["content_order"]
+            isOneToOne: true
+            referencedRelation: "product_contents"
+            referencedColumns: ["delivery_order"]
+          },
+          {
+            foreignKeyName: "product_mail_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string
@@ -415,6 +516,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      buy_product_vb: { Args: { _product_id: string }; Returns: number }
       buy_tickets: { Args: { _qty: number }; Returns: undefined }
       global_spins: {
         Args: never
