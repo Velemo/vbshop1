@@ -361,6 +361,59 @@ export type Database = {
           },
         ]
       }
+      roulette_rules: {
+        Row: {
+          created_at: string
+          deliveries_done: number
+          deliveries_total: number
+          eligible_active: boolean
+          enabled: boolean
+          goal_counter: number
+          goal_spins: number
+          min_user_spins: number
+          mode: string
+          position: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          deliveries_done?: number
+          deliveries_total?: number
+          eligible_active?: boolean
+          enabled?: boolean
+          goal_counter?: number
+          goal_spins?: number
+          min_user_spins?: number
+          mode?: string
+          position: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          deliveries_done?: number
+          deliveries_total?: number
+          eligible_active?: boolean
+          enabled?: boolean
+          goal_counter?: number
+          goal_spins?: number
+          min_user_spins?: number
+          mode?: string
+          position?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roulette_rules_position_fkey"
+            columns: ["position"]
+            isOneToOne: true
+            referencedRelation: "roulette_slots"
+            referencedColumns: ["position"]
+          },
+        ]
+      }
       roulette_slots: {
         Row: {
           image_url: string | null
