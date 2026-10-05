@@ -550,9 +550,9 @@ const Admin = () => {
                 <Button type="button" size="sm" variant="outline" onClick={() => setEditing({ ...editing, deliveries: [...editing.deliveries, blankDelivery()] })}><Plus size={16} className="mr-1"/> Adicionar</Button>
               </div>
               <p className="text-xs text-muted-foreground">Uma entrega diferente por compra, na ordem abaixo. 1 vb$ = 85 Mt.</p>
-              {editing.deliveries.map((d, i) => (
-                <div key={d.delivery_order || `new-${i}`} className="border-b border-border pb-3 space-y-2">
-                  <div className="flex justify-between text-sm font-medium"><span>Entrega {i + 1} {d.delivered_at ? "· usada" : "· disponível"}</span>
+              {editing.deliveries.map((d, i) => ({ d, i })).sort((a, b) => Number(!!a.d.delivered_at) - Number(!!b.d.delivered_at)).map(({ d, i }) => (
+                <div key={d.delivery_order || `new-${i}`} className={`border-b border-border pb-3 space-y-2 ${d.delivered_at ? "opacity-70" : ""}`}>
+                  <div className="flex justify-between items-center text-sm font-medium"><span>Entrega {i + 1} {d.delivered_at ? <span className="ml-1 inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-xs font-semibold">Entregue ✔️</span> : "· disponível"}</span>
                     {!d.delivered_at && <Button type="button" size="icon" variant="ghost" aria-label={`Remover entrega ${i + 1}`} onClick={() => removeDelivery(i)}><Trash2 size={15}/></Button>}
                   </div>
                   <textarea aria-label={`Texto da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={4000} rows={2} value={d.content_text} onChange={e => updateDelivery(i, { content_text: e.target.value })} placeholder="Texto da entrega" className="w-full p-2 border border-border rounded-md bg-background text-sm" />
