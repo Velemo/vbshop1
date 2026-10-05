@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 type Tab = "products" | "visits" | "ad" | "roleta" | "codes";
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
+type Rule = { position: number; enabled: boolean; mode: "percent" | "goal" | "eligible"; weight: number; goal_spins: number; goal_counter: number; min_user_spins: number; deliveries_total: number; deliveries_done: number; eligible_active: boolean };
+const defaultRule = (position: number): Rule => ({ position, enabled: true, mode: "percent", weight: 10, goal_spins: 50, goal_counter: 0, min_user_spins: 0, deliveries_total: 1, deliveries_done: 0, eligible_active: false });
 type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
 type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null };
 const blankDelivery = (): Delivery => ({ content_text: "", content_link: "", media_url: "" });
@@ -54,6 +56,7 @@ const Admin = () => {
   const [adSaving, setAdSaving] = useState(false);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [prizes, setPrizes] = useState<Record<number, PrizeContent>>({});
+  const [rules, setRules] = useState<Record<number, Rule>>({});
   const [codes, setCodes] = useState<Code[]>([]);
   const [codeAmount, setCodeAmount] = useState("10");
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
@@ -147,6 +150,19 @@ const Admin = () => {
     setSlots(data || []);
     const { data: details } = await (supabase as any).from("roulette_prize_content").select("position,prize_text,prize_link,prize_video_url");
     setPrizes(Object.fromEntries((details || []).map((detail: PrizeContent) => [detail.position, detail])));
+    const { data: rr } = await (supabase as any).from("roulette_rules").select("*");
+    setRules(Object.fromEntries((rr || []).map((r: Rule) => [r.position, r])));
+  };
+  const ruleOf = (position: number): Rule => ({ ...defaultRule(position), ...rules[position] });
+  const totalWeight = slots.reduce((sum, s) => { const r = ruleOf(s.position); return sum + (r.enabled && r.mode === "percent" ? Number(r.weight) || 0 : 0); }, 0);
+  const saveRule = async (position: number) => {
+    const r = ruleOf(position);
+    const { error } = await (supabase as any).from("roulette_rules").upsert({
+      position, enabled: r.enabled, mode: r.mode, weight: Math.max(0, r.weight || 0),
+      goal_spins: Math.max(1, Math.floor(r.goal_spins || 1)), min_user_spins: Math.max(0, Math.floor(r.min_user_spins || 0)),
+      deliveries_total: Math.max(1, Math.floor(r.deliveries_total || 1)), eligible_active: r.eligible_active,
+    });
+    if (error) toast.error("Erro: " + error.message); else { toast.success(`Regra do quadrado ${position + 1} guardada`); loadSlots(); }
   };
   const loadCodes = async () => {
     const { data } = await (supabase as any).from("recharge_codes").select("*").order("created_at", { ascending: false }).limit(100);
@@ -437,6 +453,28 @@ const Admin = () => {
                   <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-primary"><Upload size={12} /> Vídeo do prémio<input type="file" accept="video/*" className="hidden" onChange={e => onPrizeVideo(sl.position, e)} /></label>
                   {prizes[sl.position]?.prize_video_url && <button onClick={() => { updatePrize(sl.position, { prize_video_url: "" }); savePrize(sl.position, { prize_video_url: "" }); }} className="text-xs text-destructive">Remover vídeo</button>}
                   <button onClick={() => savePrize(sl.position)} className="w-full p-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold">Guardar conteúdo</button>
+                  {(() => { const r = ruleOf(sl.position); const set = (c: Partial<Rule>) => setRules(cur => ({ ...cur, [sl.position]: { ...ruleOf(sl.position), ...c } }));
+                    const inp = "w-full p-1.5 rounded-md bg-background border border-border text-xs";
+                    return (
+                    <div className="border-t border-border pt-2 space-y-1.5 text-xs">
+                      <p className="font-semibold">Regra do prémio</p>
+                      <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.enabled} onChange={e => set({ enabled: e.target.checked })}/> Prémio ligado</label>
+                      <select aria-label={`Tipo de regra ${sl.position + 1}`} value={r.mode} onChange={e => set({ mode: e.target.value as Rule["mode"] })} className={inp}>
+                        <option value="percent">Percentagem</option>
+                        <option value="goal">Meta de giros</option>
+                        <option value="eligible">Utilizador elegível</option>
+                      </select>
+                      {r.mode === "percent" && <label className="block">Percentagem (%)<input type="number" min={0} step="0.1" value={r.weight} onChange={e => set({ weight: Number(e.target.value) })} className={inp}/>
+                        <span className="text-muted-foreground">≈ {totalWeight > 0 && r.enabled ? ((r.weight / totalWeight) * 100).toFixed(1) : "0"}% real</span></label>}
+                      {r.mode === "goal" && <>
+                        <label className="block">Meta global de giros<input type="number" min={1} value={r.goal_spins} onChange={e => set({ goal_spins: Number(e.target.value) })} className={inp}/></label>
+                        <label className="block">Nº de entregas<input type="number" min={1} value={r.deliveries_total} onChange={e => set({ deliveries_total: Number(e.target.value) })} className={inp}/></label>
+                        <p className="text-muted-foreground">Contagem: {r.goal_counter}/{r.goal_spins} · Entregues: {r.deliveries_done}/{r.deliveries_total}</p>
+                      </>}
+                      {(r.mode === "goal" || r.mode === "eligible") && <label className="block">Mínimo de giros do utilizador<input type="number" min={0} value={r.min_user_spins} onChange={e => set({ min_user_spins: Number(e.target.value) })} className={inp}/></label>}
+                      {r.mode === "eligible" && <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.eligible_active} onChange={e => set({ eligible_active: e.target.checked })}/> Ativo para o próximo elegível</label>}
+                      <button onClick={() => saveRule(sl.position)} className="w-full p-1.5 rounded-md border border-primary text-primary font-semibold">Guardar regra</button>
+                    </div>); })()}
                 </div>
               ))}
             </div>
