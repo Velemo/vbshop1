@@ -53,6 +53,33 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          percent: number
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          percent: number
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          percent?: number
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       prize_mail: {
         Row: {
           created_at: string
@@ -188,6 +215,7 @@ export type Database = {
       }
       products: {
         Row: {
+          allow_discount: boolean
           created_at: string
           description: string
           gallery: Json
@@ -202,6 +230,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_discount?: boolean
           created_at?: string
           description?: string
           gallery?: Json
@@ -216,6 +245,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_discount?: boolean
           created_at?: string
           description?: string
           gallery?: Json
@@ -562,8 +592,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      buy_product_vb: { Args: { _product_id: string }; Returns: number }
+      buy_product_vb: {
+        Args: { _code?: string; _product_id: string }
+        Returns: number
+      }
       buy_tickets: { Args: { _qty: number }; Returns: undefined }
+      check_discount: {
+        Args: { _code: string; _product_id: string }
+        Returns: number
+      }
       global_spins: {
         Args: never
         Returns: {
