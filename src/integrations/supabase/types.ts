@@ -145,7 +145,7 @@ export type Database = {
           id: string
           media_url: string | null
           paid_vb: number
-          product_id: string
+          product_id: string | null
           product_name: string
           updated_at: string
           user_id: string
@@ -158,7 +158,7 @@ export type Database = {
           id?: string
           media_url?: string | null
           paid_vb: number
-          product_id: string
+          product_id?: string | null
           product_name: string
           updated_at?: string
           user_id: string
@@ -171,19 +171,12 @@ export type Database = {
           id?: string
           media_url?: string | null
           paid_vb?: number
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "product_mail_content_order_fkey"
-            columns: ["content_order"]
-            isOneToOne: true
-            referencedRelation: "product_contents"
-            referencedColumns: ["delivery_order"]
-          },
           {
             foreignKeyName: "product_mail_product_id_fkey"
             columns: ["product_id"]

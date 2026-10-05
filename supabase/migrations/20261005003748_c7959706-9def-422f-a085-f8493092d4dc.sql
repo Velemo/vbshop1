@@ -1,0 +1,10 @@
+ALTER TABLE public.product_mail DROP CONSTRAINT IF EXISTS product_mail_content_order_fkey;
+ALTER TABLE public.product_mail DROP CONSTRAINT IF EXISTS product_mail_product_id_fkey;
+ALTER TABLE public.product_mail ALTER COLUMN product_id DROP NOT NULL;
+ALTER TABLE public.product_mail ADD CONSTRAINT product_mail_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+ALTER TABLE public.product_contents DROP CONSTRAINT IF EXISTS product_contents_product_id_fkey;
+ALTER TABLE public.product_contents ADD CONSTRAINT product_contents_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+ALTER TABLE public.reviews DROP CONSTRAINT IF EXISTS reviews_product_id_fkey;
+ALTER TABLE public.reviews ADD CONSTRAINT reviews_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+ALTER TABLE public.wishlists DROP CONSTRAINT IF EXISTS wishlists_product_id_fkey;
+ALTER TABLE public.wishlists ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
