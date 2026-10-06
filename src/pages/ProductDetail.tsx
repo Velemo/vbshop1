@@ -28,6 +28,8 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImg, setActiveImg] = useState<string | null>(null);
+  const [discountCode, setDiscountCode] = useState("");
+  const [pct, setPct] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [inWishlist, setInWishlist] = useState(false);
   const [myRating, setMyRating] = useState(0);
@@ -59,15 +61,23 @@ const ProductDetail = () => {
 
   const { price, promo, original } = activePrice(product);
   const vbPrice = Math.round(price / 85 * 100) / 100;
+  const finalVb = Math.round(price / 85 * (100 - pct)) / 100;
   const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
   const allImages = [product.image_url, ...gallery].filter((image): image is string => typeof image === "string" && !!image);
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
+
+  const applyCode = async () => {
+    if (!discountCode.trim()) return;
+    const { data, error } = await (supabase as any).rpc("check_discount", { _product_id: product.id, _code: discountCode.trim() });
+    if (error) { setPct(0); toast.error(error.message); return; }
+    setPct(Number(data) || 0); toast.success(`Desconto de ${data}% aplicado`);
+  };
 
   const buyWithVb = async () => {
     if (!session) { navigate("/auth"); return; }
     if (purchasing) return;
     setPurchasing(true);
-    const { error } = await supabase.rpc("buy_product_vb", { _product_id: product.id });
+    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null });
     setPurchasing(false);
     if (error) { toast.error(error.message); return; }
     await refresh();
@@ -158,10 +168,18 @@ const ProductDetail = () => {
             </p>
 
             <div className="space-y-2">
-              <p className="text-sm">{formatVb(vbPrice)} <span className="text-muted-foreground">· 1 vb$ = 85 Mt</span></p>
+              <p className="text-sm">{formatVb(finalVb)} {pct > 0 && <span className="line-through text-muted-foreground">{formatVb(vbPrice)}</span>} <span className="text-muted-foreground">· 1 vb$ = 85 Mt</span></p>
               {session && <p className="text-xs text-muted-foreground">Saldo: {formatVb(balance)}</p>}
+              {(product as any).allow_discount && session && (
+                <div className="flex gap-2">
+                  <input value={discountCode} onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setPct(0); }} maxLength={40} placeholder="Código de desconto"
+                    className="flex-1 min-w-0 rounded-lg border border-border bg-background p-2 text-sm" />
+                  <Button variant="outline" onClick={applyCode}>Aplicar</Button>
+                </div>
+              )}
+              {pct > 0 && <p className="text-xs text-primary">Desconto de {pct}% aplicado</p>}
               <Button className="w-full" disabled={purchasing || product.stock < 1 || vbPrice <= 0} onClick={buyWithVb}>
-                {purchasing ? "A pagar..." : `Pagar com vb$ · ${formatVb(vbPrice)}`}
+                {purchasing ? "A pagar..." : `Pagar com vb$ · ${formatVb(finalVb)}`}
               </Button>
             </div>
 
