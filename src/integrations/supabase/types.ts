@@ -57,6 +57,7 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          expires_at: string | null
           id: string
           percent: number
           used_at: string | null
@@ -65,6 +66,7 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           percent: number
           used_at?: string | null
@@ -73,6 +75,7 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           percent?: number
           used_at?: string | null
@@ -296,6 +299,7 @@ export type Database = {
           amount: number
           code: string
           created_at: string
+          expires_at: string | null
           id: string
           redeemed_at: string | null
           redeemed_by: string | null
@@ -304,6 +308,7 @@ export type Database = {
           amount: number
           code: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
@@ -312,6 +317,7 @@ export type Database = {
           amount?: number
           code?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
