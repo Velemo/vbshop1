@@ -246,7 +246,7 @@ const Admin = () => {
         gallery: Array.isArray(p.gallery) ? p.gallery : [],
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
         promo_ends_at: p.promo_ends_at ? p.promo_ends_at.slice(0, 16) : "",
-        stock: String(p.stock), seller_whatsapp: p.seller_whatsapp,
+        stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount,
         deliveries: (data || []).map(d => ({ ...d, content_link: d.content_link || "", media_url: d.media_url || "" })),
       });
     } else setEditing({ ...empty });
@@ -271,6 +271,7 @@ const Admin = () => {
       promo_ends_at: editing.promo_ends_at ? new Date(editing.promo_ends_at).toISOString() : null,
       stock: parseInt(editing.stock) || 0,
       seller_whatsapp: editing.seller_whatsapp.trim(),
+      allow_discount: !!editing.allow_discount,
     };
     const result = editing.id
       ? await supabase.from("products").update(payload).eq("id", editing.id).select("id").single()
