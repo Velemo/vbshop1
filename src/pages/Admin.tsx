@@ -41,10 +41,11 @@ type ProductForm = {
   promo_ends_at: string;
   stock: string;
   seller_whatsapp: string;
+  allow_discount?: boolean;
   deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", deliveries: [] };
+const empty: ProductForm = { name: "", description: "", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, deliveries: [] };
 
 const Admin = () => {
   const [tab, setTab] = useState<Tab>("products");
@@ -59,6 +60,11 @@ const Admin = () => {
   const [rules, setRules] = useState<Record<number, Rule>>({});
   const [codes, setCodes] = useState<Code[]>([]);
   const [codeAmount, setCodeAmount] = useState("10");
+  const [codeKind, setCodeKind] = useState<"recharge" | "discount">("recharge");
+  const [codePercent, setCodePercent] = useState("10");
+  const [codeValidity, setCodeValidity] = useState("30");
+  const [codeCustomDate, setCodeCustomDate] = useState("");
+  const [discounts, setDiscounts] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
   const [available, setAvailable] = useState<Record<string, number>>({});
   const [savingProduct, setSavingProduct] = useState(false);
@@ -167,6 +173,8 @@ const Admin = () => {
   const loadCodes = async () => {
     const { data } = await (supabase as any).from("recharge_codes").select("*").order("created_at", { ascending: false }).limit(100);
     setCodes(data || []);
+    const { data: ds } = await (supabase as any).from("discount_codes").select("*").order("created_at", { ascending: false }).limit(100);
+    setDiscounts(ds || []);
   };
   const saveSlot = async (sl: Slot) => {
     const { error } = await (supabase as any).from("roulette_slots").update({ image_url: sl.image_url, label: sl.label, updated_at: new Date().toISOString() }).eq("position", sl.position);
@@ -198,12 +206,28 @@ const Admin = () => {
     if (updated) saveSlot(updated);
   };
   const genCode = async () => {
-    const amount = Number(codeAmount);
-    if (!(amount > 0) || amount > 100000) { toast.error("Valor inválido"); return; }
+    let expires_at: string | null = null;
+    if (codeValidity === "custom") {
+      if (!codeCustomDate) { toast.error("Escolha a data de validade"); return; }
+      expires_at = new Date(codeCustomDate).toISOString();
+    } else if (codeValidity !== "none") {
+      expires_at = new Date(Date.now() + Number(codeValidity) * 86400000).toISOString();
+    }
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const rnd = crypto.getRandomValues(new Uint32Array(12));
-    const code = "VB-" + Array.from(rnd, n => chars[n % chars.length]).join("").replace(/(.{4})(?=.)/g, "$1-");
-    const { error } = await (supabase as any).from("recharge_codes").insert({ code, amount });
+    const body = Array.from(rnd, n => chars[n % chars.length]).join("").replace(/(.{4})(?=.)/g, "$1-");
+    let code: string; let error: any;
+    if (codeKind === "recharge") {
+      const amount = Number(codeAmount);
+      if (!(amount > 0) || amount > 100000) { toast.error("Valor inválido"); return; }
+      code = "VB-" + body;
+      ({ error } = await (supabase as any).from("recharge_codes").insert({ code, amount, expires_at }));
+    } else {
+      const percent = Math.floor(Number(codePercent));
+      if (!(percent >= 1 && percent <= 100)) { toast.error("Desconto deve ser entre 1 e 100%"); return; }
+      code = "DS-" + body;
+      ({ error } = await (supabase as any).from("discount_codes").insert({ code, percent, expires_at }));
+    }
     if (error) { toast.error("Erro: " + error.message); return; }
     navigator.clipboard?.writeText(code).catch(() => {});
     toast.success(`Código ${code} criado e copiado`);
@@ -483,23 +507,56 @@ const Admin = () => {
 
         {tab === "codes" && (
           <div className="max-w-lg space-y-4">
-            <p className="text-sm text-muted-foreground">Gere um código e envie ao cliente. Ele resgata no Perfil e o valor entra no saldo vb$.</p>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
-                <label className="text-xs font-medium">Valor (vb$)</label>
-                <input type="number" min="0.01" step="0.01" value={codeAmount} onChange={e => setCodeAmount(e.target.value)}
+            <div className="flex gap-2">
+              {(["recharge", "discount"] as const).map(k => (
+                <button key={k} onClick={() => setCodeKind(k)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${codeKind === k ? "bg-primary text-primary-foreground border-primary" : "border-border"}`}>
+                  {k === "recharge" ? "Recarga vb$" : "Desconto %"}
+                </button>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {codeKind === "recharge" ? "O cliente resgata no Perfil e o valor entra no saldo vb$." : "O cliente usa ao pagar um produto que aceite desconto. Cada código serve uma vez."}
+            </p>
+            <div className="grid grid-cols-2 gap-2 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-medium">{codeKind === "recharge" ? "Valor (vb$)" : "Desconto (%)"}</label>
+                <input type="number" min="1" step={codeKind === "recharge" ? "0.01" : "1"} max={codeKind === "discount" ? 100 : undefined}
+                  value={codeKind === "recharge" ? codeAmount : codePercent}
+                  onChange={e => codeKind === "recharge" ? setCodeAmount(e.target.value) : setCodePercent(e.target.value)}
                   className="w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
               </div>
-              <button onClick={genCode} className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Gerar código</button>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Validade</label>
+                <select value={codeValidity} onChange={e => setCodeValidity(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-background border border-border text-sm">
+                  <option value="1">1 dia</option>
+                  <option value="7">7 dias</option>
+                  <option value="30">30 dias</option>
+                  <option value="90">90 dias</option>
+                  <option value="custom">Escolher data</option>
+                  <option value="none">Sem validade</option>
+                </select>
+              </div>
+              {codeValidity === "custom" && (
+                <input type="datetime-local" value={codeCustomDate} onChange={e => setCodeCustomDate(e.target.value)}
+                  className="col-span-2 w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
+              )}
+              <button onClick={genCode} className="col-span-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Gerar código</button>
             </div>
             <div className="space-y-1.5">
-              {codes.map(c => (
-                <div key={c.id} className="bg-card border border-border rounded-lg p-2.5 text-sm flex items-center gap-2">
-                  <button className="font-mono truncate" onClick={() => { navigator.clipboard?.writeText(c.code); toast.success("Copiado"); }}>{c.code}</button>
-                  <span className="ml-auto shrink-0">{Number(c.amount).toFixed(2)} vb$</span>
-                  <span className={`text-xs shrink-0 ${c.redeemed_by ? "text-muted-foreground" : "text-primary"}`}>{c.redeemed_by ? "usado" : "livre"}</span>
-                </div>
-              ))}
+              {(codeKind === "recharge" ? codes : discounts).map((c: any) => {
+                const used = c.redeemed_by || c.used_by;
+                const expired = !used && c.expires_at && new Date(c.expires_at) < new Date();
+                return (
+                  <div key={c.id} className="bg-card border border-border rounded-lg p-2.5 text-sm flex items-center gap-2">
+                    <button className="font-mono truncate" onClick={() => { navigator.clipboard?.writeText(c.code); toast.success("Copiado"); }}>{c.code}</button>
+                    <span className="ml-auto shrink-0">{codeKind === "recharge" ? `${Number(c.amount).toFixed(2)} vb$` : `${c.percent}%`}</span>
+                    <span className="text-xs shrink-0 text-muted-foreground">{c.expires_at ? `até ${new Date(c.expires_at).toLocaleDateString()}` : "sem validade"}</span>
+                    <span className={`text-xs shrink-0 ${used || expired ? "text-muted-foreground" : "text-primary"}`}>{used ? "usado" : expired ? "expirado" : "livre"}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -557,6 +614,10 @@ const Admin = () => {
               </div>
             </div>
 
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={!!editing.allow_discount} onChange={e => setEditing({ ...editing, allow_discount: e.target.checked })} />
+              Aceitar código de desconto
+            </label>
             {[
               { k: "name", label: "Nome", placeholder: "Nome do produto" },
               { k: "description", label: "Descrição", placeholder: "Descrição completa", textarea: true },
