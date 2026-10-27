@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, LogOut, Settings, Shield, UserRound, Mail } from "lucide-react";
+import { Heart, LogOut, Settings, UserRound, Mail, Camera } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
@@ -12,6 +12,43 @@ const Profile = () => {
   const navigate = useNavigate();
   const { balance, tickets, refresh } = useWallet();
   const [code, setCode] = useState("");
+  const [name, setName] = useState(String(session?.user.user_metadata?.full_name || session?.user.user_metadata?.name || ""));
+  const [savingName, setSavingName] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const avatarUrl = session?.user.user_metadata?.avatar_url || session?.user.user_metadata?.picture;
+
+  const saveName = async () => {
+    if (!session) return;
+    const cleanName = name.trim().slice(0, 60);
+    if (!cleanName) { toast.error("Introduza um nome."); return; }
+    setSavingName(true);
+    const { error } = await supabase.auth.updateUser({ data: { full_name: cleanName, name: cleanName } });
+    setSavingName(false);
+    if (error) { toast.error("Não foi possível guardar o nome."); return; }
+    toast.success("Nome atualizado!");
+  };
+
+  const uploadAvatar = async (file?: File) => {
+    if (!file || !session) return;
+    if (!file.type.startsWith("image/")) { toast.error("Escolha um ficheiro de imagem."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("A imagem deve ter no máximo 5 MB."); return; }
+    setUploadingAvatar(true);
+    const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${session.user.id}/avatar-${Date.now()}.${extension}`;
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadError) {
+      setUploadingAvatar(false);
+      toast.error("Não foi possível carregar a foto. Confirme se o armazenamento de avatares está configurado.");
+      return;
+    }
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error } = await supabase.auth.updateUser({ data: { avatar_url: data.publicUrl, picture: data.publicUrl } });
+    setUploadingAvatar(false);
+    if (error) { toast.error("Foto carregada, mas não foi possível atualizar o perfil."); return; }
+    toast.success("Foto de perfil atualizada!");
+  };
+
   const redeem = async () => {
     if (!code.trim()) return;
     const { error } = await (supabase as any).rpc("redeem_code", { _code: code.trim().slice(0, 40) });
@@ -22,12 +59,25 @@ const Profile = () => {
   return (
     <main className="mx-auto max-w-xl px-4 pt-8 pb-28 min-h-screen">
       <h1 className="font-display text-3xl font-bold">Perfil</h1>
-      <div className="mt-8 flex items-center gap-4 border-b border-border pb-6">
-        <div className="grid size-14 shrink-0 place-items-center rounded-full bg-secondary text-primary"><UserRound size={25} /></div>
-        <div className="min-w-0">
-          <p className="font-semibold truncate">{session?.user.email || "Visitante"}</p>
-          <p className="text-sm text-muted-foreground">{session ? "A sua conta" : "Entre para guardar os seus favoritos"}</p>
-        </div>
+      <div className="mt-8 flex flex-col items-center gap-4 border-b border-border pb-6">
+        {session ? (
+          <>
+            <button type="button" onClick={() => fileInput.current?.click()} disabled={uploadingAvatar} aria-label="Alterar foto de perfil" className="relative grid size-24 place-items-center overflow-hidden rounded-full bg-secondary text-primary ring-2 ring-border hover:ring-primary disabled:opacity-60">
+              {avatarUrl ? <img src={avatarUrl} alt="Foto de perfil" className="size-full object-cover" /> : <UserRound size={38} />}
+              <span className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1 bg-black/65 py-1 text-xs text-white"><Camera size={13} /> {uploadingAvatar ? "A carregar..." : "Alterar"}</span>
+            </button>
+            <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => { void uploadAvatar(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+            <div className="w-full max-w-sm">
+              <label htmlFor="profile-name" className="mb-1 block text-sm font-medium">Nome</label>
+              <div className="flex gap-2">
+                <input id="profile-name" value={name} onChange={e => setName(e.target.value)} maxLength={60} placeholder="O seu nome" className="min-w-0 flex-1 rounded-lg border border-border bg-background p-2 text-sm" />
+                <Button onClick={saveName} disabled={savingName}>{savingName ? "A guardar..." : "Guardar"}</Button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="grid size-24 place-items-center rounded-full bg-secondary text-primary"><UserRound size={38} /></div>
+        )}
       </div>
       {!session ? (
         <Button asChild className="mt-6 w-full"><Link to="/auth">Entrar</Link></Button>
@@ -38,15 +88,13 @@ const Profile = () => {
             <p className="font-display text-3xl font-bold">{formatVb(balance)}</p>
             <p className="text-xs text-muted-foreground">{tickets} bilhete(s) da roleta</p>
             <div className="mt-3 flex gap-2">
-              <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Código de recarga"
-                className="flex-1 min-w-0 rounded-lg border border-border bg-background p-2 text-sm" />
+              <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={40} placeholder="Código de recarga" className="flex-1 min-w-0 rounded-lg border border-border bg-background p-2 text-sm" />
               <Button onClick={redeem}>Recarregar</Button>
             </div>
           </div>
           <Link to="/wishlist" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Heart size={20} /> Lista de desejos</Link>
           <Link to="/correio" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Mail size={20} /> Correio</Link>
           <Link to="/settings" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
-            
           <Button variant="ghost" className="mt-4 gap-3 px-0" onClick={async () => { await signOut(); navigate("/"); }}><LogOut size={20} /> Sair da conta</Button>
         </div>
       )}
