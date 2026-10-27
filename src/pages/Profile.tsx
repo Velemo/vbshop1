@@ -46,7 +46,7 @@ const Profile = () => {
           <Link to="/wishlist" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Heart size={20} /> Lista de desejos</Link>
           <Link to="/correio" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Mail size={20} /> Correio</Link>
           <Link to="/settings" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
-          {isAdmin && <Link to="/admin" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Shield size={20} /> Painel ADM</Link>}
+            
           <Button variant="ghost" className="mt-4 gap-3 px-0" onClick={async () => { await signOut(); navigate("/"); }}><LogOut size={20} /> Sair da conta</Button>
         </div>
       )}
