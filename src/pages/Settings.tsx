@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Square, Check, Shield } from "lucide-react";
+import { ArrowLeft, Sparkles, Square, Check, Shield, Mail } from "lucide-react";
 import { useSettings, SiteMode } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ const options: { value: SiteMode; title: string; desc: string; icon: typeof Spar
 
 const Settings = () => {
   const { mode, setMode } = useSettings();
-  const { isAdmin } = useAuth();
+  const { isAdmin, session } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,6 +33,17 @@ const Settings = () => {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-3">
+        {session?.user.email && (
+          <section className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+            <span className="mt-0.5 rounded-xl bg-primary/10 p-2 text-primary"><Mail size={18} /></span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-sm font-semibold">Email da conta</h2>
+              <p className="mt-1 break-all text-sm text-muted-foreground">{session.user.email}</p>
+              <p className="mt-1 text-xs text-muted-foreground">O seu email aparece apenas nas definições.</p>
+            </div>
+          </section>
+        )}
+
         <p className="text-sm text-muted-foreground">Escolha como o site deve aparecer neste dispositivo.</p>
         {options.map(o => {
           const Icon = o.icon;
