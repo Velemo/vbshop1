@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, LogOut, Settings, UserRound, Mail, Camera } from "lucide-react";
+import { Heart, LogOut, Settings, UserRound, Mail, Camera, Send, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -119,7 +119,7 @@ const Profile = () => {
               <Button onClick={redeem}>Recarregar</Button>
             </div>
           </div>
-          <Link to="/wishlist" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Heart size={20} /> Lista de desejos</Link>
+          <Link to="/send-vb" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Send size={20} /> Enviar vb$</Link>\n          <Link to="/p2p" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><ArrowLeftRight size={20} /> P2P — Comprar vb$</Link>\n          <Link to="/wishlist" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Heart size={20} /> Lista de desejos</Link>
           <Link to="/correio" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Mail size={20} /> Correio</Link>
           <Link to="/settings" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
           <Button variant="ghost" className="mt-4 gap-3 px-0" onClick={async () => { await signOut(); navigate("/"); }}><LogOut size={20} /> Sair da conta</Button>
