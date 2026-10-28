@@ -15,7 +15,9 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [loading, setLoading] = useState(true);
+  const categories = ["Todos", "MODs", "Jogos", "Eletrónicos", "Pro Digital", "Mais"];
 
   useEffect(() => {
     supabase.from("products").select("*").order("created_at", { ascending: false })
@@ -29,10 +31,12 @@ const Index = () => {
   }, [session]);
 
   const filtered = useMemo(() => {
-    if (!q.trim()) return products;
-    const s = q.toLowerCase();
-    return products.filter(p => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
-  }, [products, q]);
+    const s = q.trim().toLowerCase();
+    return products.filter(p =>
+      (selectedCategory === "Todos" || (p as any).category === selectedCategory || (!(p as any).category && selectedCategory === "Mais")) &&
+      (!s || p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s))
+    );
+  }, [products, q, selectedCategory]);
 
   const toggleWishlist = async (productId: string) => {
     if (!session) { toast.error("Entre para favoritar"); navigate("/auth"); return; }
@@ -66,6 +70,17 @@ const Index = () => {
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <AnnouncementHero />
       <main className="max-w-6xl mx-auto px-4 py-6 pb-20">
+        <section aria-label="Categorias de produtos" className="mb-5">
+          <p className="text-sm font-semibold mb-2">Categorias</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {categories.map(category => (
+              <button key={category} type="button" onClick={() => setSelectedCategory(category)}
+                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${selectedCategory === category ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:border-primary/50"}`}>
+                {category}
+              </button>
+            ))}
+          </div>
+        </section>
         {!loading && products.length === 0 && (
           <div className="text-center py-20 text-muted-foreground">
             <p className="text-sm">Nenhum produto ainda.</p>
@@ -75,7 +90,7 @@ const Index = () => {
         {loading ? (
           <div className="py-20 text-center"><div className="inline-block animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"/></div>
         ) : filtered.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-12">Nenhum produto encontrado para "{q}".</p>
+          <p className="text-center text-sm text-muted-foreground py-12">Nenhum produto encontrado {selectedCategory !== "Todos" ? `na categoria ${selectedCategory}` : ""}{q.trim() ? ` para "${q}"` : ""}.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {filtered.map(p => (
