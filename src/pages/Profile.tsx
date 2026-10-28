@@ -12,20 +12,36 @@ const Profile = () => {
   const navigate = useNavigate();
   const { balance, tickets, refresh } = useWallet();
   const [code, setCode] = useState("");
-  const [name, setName] = useState(String(session?.user.user_metadata?.full_name || session?.user.user_metadata?.name || ""));
+  const [name, setName] = useState("");
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const avatarUrl = session?.user.user_metadata?.avatar_url || session?.user.user_metadata?.picture;
+  const avatarUrl = profileAvatar || session?.user.user_metadata?.avatar_url || session?.user.user_metadata?.picture;
+
+  useEffect(() => {
+    if (!session) return;
+    (supabase as any).from("profiles").select("display_name,avatar_url").eq("user_id", session.user.id).maybeSingle()
+      .then(({ data }: any) => {
+        if (data?.display_name) setName(data.display_name);
+        if (data?.avatar_url) setProfileAvatar(data.avatar_url);
+      });
+  }, [session?.user.id]);
 
   const saveName = async () => {
     if (!session) return;
     const cleanName = name.trim().slice(0, 60);
     if (!cleanName) { toast.error("Introduza um nome."); return; }
     setSavingName(true);
-    const { error } = await supabase.auth.updateUser({ data: { full_name: cleanName, name: cleanName } });
+    const { data: existing, error: readError } = await (supabase as any).from("profiles").select("id").eq("user_id", session.user.id).maybeSingle();
+    if (readError) { setSavingName(false); toast.error("Não foi possível consultar o perfil."); return; }
+    const profileValues = { display_name: cleanName, email: session.user.email, updated_at: new Date().toISOString() };
+    const result = existing
+      ? await (supabase as any).from("profiles").update(profileValues).eq("user_id", session.user.id)
+      : await (supabase as any).from("profiles").insert({ user_id: session.user.id, ...profileValues });
     setSavingName(false);
-    if (error) { toast.error("Não foi possível guardar o nome."); return; }
+    if (result.error) { toast.error("Não foi possível guardar o nome no perfil."); return; }
+    await supabase.auth.updateUser({ data: { full_name: cleanName, name: cleanName } });
     toast.success("Nome atualizado!");
   };
 
@@ -43,9 +59,20 @@ const Profile = () => {
       return;
     }
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    const { error } = await supabase.auth.updateUser({ data: { avatar_url: data.publicUrl, picture: data.publicUrl } });
+    const { data: existing, error: readError } = await (supabase as any).from("profiles").select("id").eq("user_id", session.user.id).maybeSingle();
+    if (readError) { setUploadingAvatar(false); toast.error("Não foi possível consultar o perfil."); return; }
+    const profileValues = { avatar_url: data.publicUrl, email: session.user.email, updated_at: new Date().toISOString() };
+    const result = existing
+      ? await (supabase as any).from("profiles").update(profileValues).eq("user_id", session.user.id)
+      : await (supabase as any).from("profiles").insert({ user_id: session.user.id, ...profileValues });
+    if (result.error) {
+      setUploadingAvatar(false);
+      toast.error("Foto carregada, mas não foi possível guardar no perfil.");
+      return;
+    }
+    await supabase.auth.updateUser({ data: { avatar_url: data.publicUrl, picture: data.publicUrl } });
+    setProfileAvatar(data.publicUrl);
     setUploadingAvatar(false);
-    if (error) { toast.error("Foto carregada, mas não foi possível atualizar o perfil."); return; }
     toast.success("Foto de perfil atualizada!");
   };
 
