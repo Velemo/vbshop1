@@ -17,7 +17,9 @@ import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import Profile from "./pages/Profile";
 import Roleta from "./pages/Roleta";
-import Correio from "./pages/Correio";\nimport SendVb from "./pages/SendVb";\nimport P2P from "./pages/P2P";
+import Correio from "./pages/Correio";
+import SendVb from "./pages/SendVb";
+import P2P from "./pages/P2P";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +65,9 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/perfil" element={<Profile />} />
               <Route path="/roleta" element={<Roleta />} />
-              <Route path="/correio" element={<Correio />} />\n              <Route path="/send-vb" element={<SendVb />} />\n              <Route path="/p2p" element={<P2P />} />
+              <Route path="/correio" element={<Correio />} />
+              <Route path="/send-vb" element={<SendVb />} />
+              <Route path="/p2p" element={<P2P />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
