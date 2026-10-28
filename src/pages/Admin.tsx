@@ -34,6 +34,7 @@ type ProductForm = {
   id?: string;
   name: string;
   description: string;
+  category: string;
   image_url: string;
   gallery: string[];
   price: string;
@@ -45,7 +46,7 @@ type ProductForm = {
   deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, deliveries: [] };
+const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, deliveries: [] };
 
 const Admin = () => {
   const [tab, setTab] = useState<Tab>("products");
@@ -241,7 +242,7 @@ const Admin = () => {
       const { data, error } = await supabase.from("product_contents").select("delivery_order,product_id,content_text,content_link,media_url,delivered_at").eq("product_id", p.id).order("delivery_order");
       if (error) { toast.error("Não foi possível carregar os conteúdos"); return; }
       setEditing({
-        id: p.id, name: p.name, description: p.description,
+        id: p.id, name: p.name, description: p.description, category: (p as any).category || "Mais",
         image_url: p.image_url || "",
         gallery: Array.isArray(p.gallery) ? p.gallery : [],
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
@@ -264,6 +265,7 @@ const Admin = () => {
     const payload = {
       name: editing.name.trim(),
       description: editing.description,
+      category: editing.category,
       image_url: editing.image_url || null,
       gallery: editing.gallery,
       price: Number(editing.price),
@@ -615,6 +617,13 @@ const Admin = () => {
               </div>
             </div>
 
+            <div className="space-y-1">
+              <label className="text-xs font-medium" htmlFor="product-category">Categoria do produto</label>
+              <select id="product-category" value={editing.category} onChange={e => setEditing({ ...editing, category: e.target.value })}
+                className="w-full p-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                {["MODs", "Jogos", "Eletrónicos", "Pro Digital", "Mais"].map(category => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </div>
             <label className="flex items-center gap-2 text-sm font-medium">
               <input type="checkbox" checked={!!editing.allow_discount} onChange={e => setEditing({ ...editing, allow_discount: e.target.checked })} />
               Aceitar código de desconto
