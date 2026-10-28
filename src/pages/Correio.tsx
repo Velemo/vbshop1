@@ -14,6 +14,7 @@ const Correio = () => {
   const [purchases, setPurchases] = useState<ProductMail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [tipoEntrega, setTipoEntrega] = useState<"premios" | "compras">("premios");
 
   useEffect(() => {
     if (!session) { setMessages([]); setPurchases([]); setLoading(false); return; }
@@ -32,9 +33,13 @@ const Correio = () => {
       {authLoading || loading ? <p className="mt-8 text-sm text-muted-foreground">A carregar...</p>
         : !session ? <div className="mt-8 text-sm"><Link to="/auth" className="text-primary font-semibold">Entrar</Link> para ver o seu Correio.</div>
         : error ? <p className="mt-8 text-sm text-destructive">Não foi possível carregar o Correio.</p>
-        : messages.length + purchases.length === 0 ? <p className="mt-8 text-sm text-muted-foreground">Ainda não há mensagens.</p>
-        : <div className="mt-6 space-y-8">
-          <section>
+        : <>
+          <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+            <button type="button" onClick={() => setTipoEntrega("premios")} className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${tipoEntrega === "premios" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}><Gift size={16} className="inline mr-2" />Prémios ({messages.length})</button>
+            <button type="button" onClick={() => setTipoEntrega("compras")} className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${tipoEntrega === "compras" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}><ShoppingBag size={16} className="inline mr-2" />Compras ({purchases.length})</button>
+          </div>
+          <div className="mt-6">
+          {tipoEntrega === "compras" ? <section>
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><ShoppingBag size={20} /> Entregas das compras <span className="text-sm font-normal text-muted-foreground">({purchases.length})</span></h2>
             {purchases.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há entregas de compras.</p> : <div className="space-y-4">
           {purchases.map(item => <article key={item.id} className="border-b border-border py-4 space-y-3">
@@ -44,8 +49,7 @@ const Correio = () => {
             {item.content_link && /^https?:\/\//i.test(item.content_link) && <a href={item.content_link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline break-all">Abrir conteúdo</a>}
           </article>)}
             </div>}
-          </section>
-          <section>
+          </section> : <section>
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><Gift size={20} /> Prémios da roleta <span className="text-sm font-normal text-muted-foreground">({messages.length})</span></h2>
             {messages.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há prémios da roleta.</p> : <div className="space-y-4">
           {messages.map(message => (
@@ -62,8 +66,9 @@ const Correio = () => {
           </article>
         ))}
             </div>}
-          </section>
-        </div>}
+          </section>}
+          </div>
+        </>}
     </main>
   );
 };
