@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Heart, LogOut, Settings, UserRound, Mail, Camera } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
