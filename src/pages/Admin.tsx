@@ -276,8 +276,8 @@ const Admin = () => {
       allow_discount: !!editing.allow_discount,
     };
     const result = editing.id
-      ? await supabase.from("products").update(payload).eq("id", editing.id).select("id").single()
-      : await supabase.from("products").insert(payload).select("id").single();
+      ? await supabase.from("products").update(payload as any).eq("id", editing.id).select("id").single()
+      : await supabase.from("products").insert(payload as any).select("id").single();
     if (result.error || !result.data) { toast.error("Erro: " + (result.error?.message || "Produto indisponível")); setSavingProduct(false); return; }
     const pending = editing.deliveries.filter(d => !d.delivered_at);
     for (const d of pending) {
