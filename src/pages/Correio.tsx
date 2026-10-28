@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Gift } from "lucide-react";
+import { Mail, Gift, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { isVideo } from "@/lib/media";
@@ -33,13 +33,21 @@ const Correio = () => {
         : !session ? <div className="mt-8 text-sm"><Link to="/auth" className="text-primary font-semibold">Entrar</Link> para ver o seu Correio.</div>
         : error ? <p className="mt-8 text-sm text-destructive">Não foi possível carregar o Correio.</p>
         : messages.length + purchases.length === 0 ? <p className="mt-8 text-sm text-muted-foreground">Ainda não há mensagens.</p>
-        : <div className="mt-6 space-y-4">
+        : <div className="mt-6 space-y-8">
+          <section>
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><ShoppingBag size={20} /> Entregas das compras <span className="text-sm font-normal text-muted-foreground">({purchases.length})</span></h2>
+            {purchases.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há entregas de compras.</p> : <div className="space-y-4">
           {purchases.map(item => <article key={item.id} className="border-b border-border py-4 space-y-3">
             <div><h2 className="font-semibold break-words">{item.product_name}</h2><p className="text-xs text-muted-foreground">Compra · {Number(item.paid_vb).toFixed(2)} vb$ · {new Date(item.created_at).toLocaleString("pt-MZ")}</p></div>
             {item.content_text && <p className="text-sm whitespace-pre-wrap break-words">{item.content_text}</p>}
             {item.media_url && (isVideo(item.media_url) ? <video src={item.media_url} controls playsInline preload="metadata" className="w-full max-h-80 object-contain" /> : <img src={item.media_url} alt="Conteúdo da compra" className="w-full max-h-80 object-contain" />)}
             {item.content_link && /^https?:\/\//i.test(item.content_link) && <a href={item.content_link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline break-all">Abrir conteúdo</a>}
           </article>)}
+            </div>}
+          </section>
+          <section>
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><Gift size={20} /> Prémios da roleta <span className="text-sm font-normal text-muted-foreground">({messages.length})</span></h2>
+            {messages.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há prémios da roleta.</p> : <div className="space-y-4">
           {messages.map(message => (
           <article key={message.id} className="border-b border-border py-4 space-y-3">
             <div className="flex items-center gap-3">
@@ -52,7 +60,10 @@ const Correio = () => {
               : <a href={message.prize_video_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">Ver vídeo</a>)}
             {message.prize_link && /^https?:\/\//i.test(message.prize_link) && <a href={message.prize_link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline break-all">Abrir link do prémio</a>}
           </article>
-        ))}</div>}
+        ))}
+            </div>}
+          </section>
+        </div>}
     </main>
   );
 };
