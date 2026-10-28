@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Gift, ShoppingBag } from "lucide-react";
+import { Gift, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { isVideo } from "@/lib/media";
@@ -29,7 +29,6 @@ const Correio = () => {
 
   return (
     <main className="mx-auto max-w-xl px-4 pt-8 pb-28 min-h-screen">
-      <h1 className="font-display text-3xl font-bold flex items-center gap-3"><Mail size={28} /> Correio</h1>
       {authLoading || loading ? <p className="mt-8 text-sm text-muted-foreground">A carregar...</p>
         : !session ? <div className="mt-8 text-sm"><Link to="/auth" className="text-primary font-semibold">Entrar</Link> para ver o seu Correio.</div>
         : error ? <p className="mt-8 text-sm text-destructive">Não foi possível carregar o Correio.</p>
