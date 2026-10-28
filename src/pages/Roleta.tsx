@@ -7,7 +7,7 @@ import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
 
 type Slot = { position: number; image_url: string | null; label: string };
-type Hist = { label: string; image_url: string | null; created_at: string };
+type Hist = { label: string; image_url: string | null; created_at: string; winner_name?: string | null; avatar_url?: string | null };
 
 const PACKS = [{ qty: 1, price: 1.76 }, { qty: 2, price: 2.36 }];
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -67,9 +67,10 @@ const Roleta = () => {
 
   const openHist = async (global: boolean) => {
     if (requireLogin()) return;
-    const { data } = global
+    const { data, error } = global
       ? await (supabase as any).rpc("global_spins")
       : await (supabase as any).from("roulette_spins").select("label,image_url,created_at").eq("user_id", session!.user.id).order("created_at", { ascending: false }).limit(30);
+    if (error) { toast.error("Não foi possível carregar o histórico."); return; }
     setHist({ title: global ? "Histórico Global" : "Meu Histórico", items: data || [] });
   };
 
@@ -159,7 +160,15 @@ const Roleta = () => {
             {hist.items.length === 0 ? <p className="text-sm text-muted-foreground">Ainda sem giros.</p> : hist.items.map((h, i) => (
               <div key={i} className="flex items-center gap-3 border-t border-border py-2 text-sm">
                 {h.image_url ? <img src={h.image_url} alt="" className="size-10 rounded object-contain bg-muted" /> : <Gift size={20} />}
-                <span className="flex-1 truncate">{h.label || "Prémio"}</span>
+                <div className="min-w-0 flex-1">
+                  {hist.title === "Histórico Global" && (
+                    <div className="mb-1 flex min-w-0 items-center gap-2">
+                      {h.avatar_url ? <img src={h.avatar_url} alt="" className="size-7 shrink-0 rounded-full object-cover bg-muted" /> : <UserRound size={20} className="shrink-0 text-muted-foreground" />}
+                      <span className="truncate text-xs font-medium">{h.winner_name || "Vencedor"}</span>
+                    </div>
+                  )}
+                  <span className="block truncate">{h.label || "Prémio"}</span>
+                </div>
                 <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-MZ")}</span>
               </div>
             ))}
