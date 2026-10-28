@@ -85,7 +85,6 @@ const Profile = () => {
 
   return (
     <main className="mx-auto max-w-xl px-4 pt-8 pb-28 min-h-screen">
-      <h1 className="font-display text-3xl font-bold">Perfil</h1>
       <div className="mt-8 flex flex-col items-center gap-4 border-b border-border pb-6">
         {session ? (
           <>
