@@ -28,7 +28,7 @@ const Correio = () => {
   }, [session?.user.id]);
 
   return (
-    <main className="mx-auto max-w-xl px-4 pt-8 pb-28 min-h-screen">
+    <main className="mx-auto max-w-xl px-4 pt-0 pb-28 min-h-screen">
       {authLoading || loading ? <p className="mt-8 text-sm text-muted-foreground">A carregar...</p>
         : !session ? <div className="mt-8 text-sm"><Link to="/auth" className="text-primary font-semibold">Entrar</Link> para ver o seu Correio.</div>
         : error ? <p className="mt-8 text-sm text-destructive">Não foi possível carregar o Correio.</p>
