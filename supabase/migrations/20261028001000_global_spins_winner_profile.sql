@@ -11,23 +11,16 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, auth
+SET search_path = public
 AS $$
   SELECT
     rs.label::text,
     rs.image_url::text,
     rs.created_at,
-    COALESCE(
-      NULLIF(BTRIM(u.raw_user_meta_data ->> 'full_name'), ''),
-      NULLIF(BTRIM(u.raw_user_meta_data ->> 'name'), ''),
-      'Vencedor'
-    ) AS winner_name,
-    COALESCE(
-      NULLIF(BTRIM(u.raw_user_meta_data ->> 'avatar_url'), ''),
-      NULLIF(BTRIM(u.raw_user_meta_data ->> 'picture'), '')
-    ) AS avatar_url
+    COALESCE(NULLIF(BTRIM(p.display_name), ''), 'Vencedor') AS winner_name,
+    NULLIF(BTRIM(p.avatar_url), '') AS avatar_url
   FROM public.roulette_spins AS rs
-  LEFT JOIN auth.users AS u ON u.id = rs.user_id
+  LEFT JOIN public.profiles AS p ON p.user_id = rs.user_id
   ORDER BY rs.created_at DESC
   LIMIT 50;
 $$;
