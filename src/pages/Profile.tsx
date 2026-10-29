@@ -166,7 +166,7 @@ const Profile = () => {
           </div>
           {showVipDetails && <section className="mt-3 rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4">
             <div className="flex items-center gap-2 font-semibold"><Crown size={20} className="text-amber-400" /> Zona VIP {isVip && <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-500">VIP</span>}</div>
-            <p className="mt-2 text-sm text-muted-foreground">Ativação por 10 vb$. Benefício previsto: até 70% de desconto em quase todos os produtos. Outros privilégios chegam em breve.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Ativação por 10 vb$. Benefício previsto: até 30% de desconto em quase todos os produtos. Outros privilégios chegam em breve.</p>
             {!isVip && <Button className="mt-3 w-full" onClick={activateVip} disabled={vipLoading}>{vipLoading ? "A ativar..." : "Ativar Zona VIP — 10 vb$"}</Button>}
           </section>}
           <Link to="/settings" className="mt-3 flex items-center gap-3 border-t border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
