@@ -75,7 +75,11 @@ const Admin = () => {
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
   const [available, setAvailable] = useState<Record<string, number>>({});
-  const [savingProduct, setSavingProduct] = useState(false);\n  const [siteMusicUrl, setSiteMusicUrl] = useState("");\n  const [siteMusicName, setSiteMusicName] = useState("");\n  const [siteMusicSaving, setSiteMusicSaving] = useState(false);\n  const [siteMusicUploading, setSiteMusicUploading] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [siteMusicUrl, setSiteMusicUrl] = useState("");
+  const [siteMusicName, setSiteMusicName] = useState("");
+  const [siteMusicSaving, setSiteMusicSaving] = useState(false);
+  const [siteMusicUploading, setSiteMusicUploading] = useState(false);
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
     setProgress({ label: `${label}: ${file.name}`, percent: 0 });
