@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Mail, Camera, Send, ArrowLeftRight, Crown } from "lucide-react";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -154,10 +154,6 @@ const Profile = () => {
             <Link to="/wishlist" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <Heart size={28} strokeWidth={1.8} />
               <span className="leading-tight">Lista de desejos</span>
-            </Link>
-            <Link to="/correio" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
-              <Mail size={28} strokeWidth={1.8} />
-              <span className="leading-tight">Correio</span>
             </Link>
             <button type="button" onClick={() => setShowVipDetails(v => !v)} className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <Crown size={28} strokeWidth={1.8} className={isVip ? "text-amber-400" : ""} />
