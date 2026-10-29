@@ -8,7 +8,9 @@ import { uploadWithProgress } from "@/lib/upload";
 import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 
-type Tab = "products" | "visits" | "ad" | "roleta" | "codes";
+type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes";
+type AdminUser = { user_id: string; email: string | null; account_created_at: string; user_code: string | null; display_name: string | null; balance: number; tickets: number };
+type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
 type Rule = { position: number; enabled: boolean; mode: "percent" | "goal" | "eligible"; weight: number; goal_spins: number; goal_counter: number; min_user_spins: number; deliveries_total: number; deliveries_done: number; eligible_active: boolean };
@@ -50,7 +52,7 @@ const empty: ProductForm = { name: "", description: "", category: "Mais", image_
 
 const Admin = () => {
   const [tab, setTab] = useState<Tab>("products");
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);\n  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);\n  const [userSearch, setUserSearch] = useState("");\n  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);\n  const [userHistory, setUserHistory] = useState<UserHistory[]>([]);\n  const [loadingUserHistory, setLoadingUserHistory] = useState(false);
   const [editing, setEditing] = useState<ProductForm | null>(null);
   const [stats, setStats] = useState({ total: 0, last24: 0, last7: 0, unique: 0 });
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
@@ -131,6 +133,21 @@ const Admin = () => {
       counts[row.product_id] = (counts[row.product_id] || 0) + 1;
       return counts;
     }, {}));
+  };
+
+  const loadAdminUsers = async () => {
+    const { data, error } = await (supabase as any).rpc("admin_list_users");
+    if (error) { toast.error("Não foi possível carregar os utilizadores: " + error.message); return; }
+    setAdminUsers((data || []) as AdminUser[]);
+  };
+
+  const openUserHistory = async (user: AdminUser) => {
+    setSelectedUser(user);
+    setLoadingUserHistory(true);
+    const { data, error } = await (supabase as any).rpc("admin_user_history", { _user_id: user.user_id });
+    setLoadingUserHistory(false);
+    if (error) { toast.error("Não foi possível carregar o histórico: " + error.message); setUserHistory([]); return; }
+    setUserHistory((data || []) as UserHistory[]);
   };
 
   const loadVisits = async () => {
@@ -235,7 +252,7 @@ const Admin = () => {
     loadCodes();
   };
 
-  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); }, []);
+  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); }, []);
 
   const startEdit = async (p?: Product) => {
     if (p) {
@@ -350,10 +367,10 @@ const Admin = () => {
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
-          {(["products", "visits", "ad", "roleta", "codes"] as Tab[]).map(t => (
+          {(["products", "users", "visits", "ad", "roleta", "codes"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3 py-2.5 text-sm whitespace-nowrap font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {({ products: "Produtos", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$" } as Record<Tab, string>)[t]}
+              {({ products: "Produtos", users: "Utilizadores", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$" } as Record<Tab, string>)[t]}
             </button>
           ))}
         </div>
@@ -383,6 +400,39 @@ const Admin = () => {
               ))}
             </div>
           </>
+        )}
+
+        {tab === "users" && (
+          <section className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border border-border bg-card p-3"><p className="text-xs text-muted-foreground">Total de contas</p><p className="text-2xl font-bold">{adminUsers.length}</p></div>
+              <div className="rounded-xl border border-border bg-card p-3"><p className="text-xs text-muted-foreground">Saldo total vb$</p><p className="text-2xl font-bold">{adminUsers.reduce((sum, u) => sum + Number(u.balance || 0), 0).toLocaleString("pt-MZ")}</p></div>
+              <div className="rounded-xl border border-border bg-card p-3 col-span-2 sm:col-span-1"><p className="text-xs text-muted-foreground">Contas ordenadas</p><p className="text-sm font-semibold">Novas primeiro</p></div>
+            </div>
+            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Pesquisar por ID, nome, email ou UUID..." className="w-full rounded-lg border border-border bg-background p-3 text-sm" />
+            <div className="space-y-2">
+              {adminUsers.filter(u => [u.user_code, u.display_name, u.email, u.user_id].some(v => (v || "").toLowerCase().includes(userSearch.toLowerCase()))).map(user => (
+                <button key={user.user_id} onClick={() => void openUserHistory(user)} className={`w-full rounded-xl border p-3 text-left ${selectedUser?.user_id === user.user_id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0"><p className="font-semibold truncate">{user.display_name || "Sem nome"}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1">{user.user_code || "ID pendente"}</p></div>
+                    <div className="shrink-0 text-right"><p className="font-semibold">{Number(user.balance || 0).toLocaleString("pt-MZ")} vb$</p><p className="text-xs text-muted-foreground">{user.tickets} bilhete(s)</p><p className="text-[11px] text-muted-foreground mt-1">{new Date(user.account_created_at).toLocaleDateString("pt-MZ")}</p></div>
+                  </div>
+                </button>
+              ))}
+              {!adminUsers.length && <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Nenhum utilizador carregado. Confirma se a migração SQL foi aplicada no Lovable Cloud.</p>}
+            </div>
+            {selectedUser && (
+              <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">Histórico do utilizador</h3><p className="text-xs text-muted-foreground">{selectedUser.user_code} · {selectedUser.email}</p></div><Button variant="outline" size="sm" onClick={() => { setSelectedUser(null); setUserHistory([]); }}>Fechar</Button></div>
+                {loadingUserHistory ? <p className="text-sm text-muted-foreground">A carregar histórico...</p> : userHistory.length ? userHistory.map((event, i) => (
+                  <div key={i} className="border-t border-border pt-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0"><p className="text-sm font-medium">{event.event_type}</p><p className="text-xs text-muted-foreground break-words">{event.description}</p><p className="text-[11px] text-muted-foreground">{new Date(event.event_at).toLocaleString("pt-MZ")}</p></div>
+                    {event.amount !== null && <p className={`shrink-0 text-sm font-semibold ${Number(event.amount) < 0 ? "text-destructive" : "text-primary"}`}>{Number(event.amount) > 0 ? "+" : ""}{Number(event.amount).toLocaleString("pt-MZ")} vb$</p>}
+                  </div>
+                )) : <p className="text-sm text-muted-foreground">Ainda não há eventos registados para este utilizador.</p>}
+              </div>
+            )}
+          </section>
         )}
 
         {tab === "visits" && (
