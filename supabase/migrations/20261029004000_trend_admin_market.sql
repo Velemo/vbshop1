@@ -61,22 +61,21 @@ $$;
 REVOKE ALL ON FUNCTION public.admin_set_trend_price(numeric,numeric) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_set_trend_price(numeric,numeric) TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.trend_create_order(_side text, _quantity numeric)
+CREATE OR REPLACE FUNCTION public.trend_create_order(_side text, _quantity numeric, _price numeric)
 RETURNS public.trend_orders
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
-DECLARE market_price numeric; result public.trend_orders;
+DECLARE result public.trend_orders;
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Faça login para enviar uma ordem'; END IF;
   IF _side NOT IN ('buy','sell') THEN RAISE EXCEPTION 'Tipo de ordem inválido'; END IF;
   IF _quantity IS NULL OR _quantity <= 0 OR _quantity > 1000000 THEN RAISE EXCEPTION 'Quantidade inválida'; END IF;
-  SELECT price INTO market_price FROM public.trend_market_state WHERE id = 1;
-  IF market_price IS NULL THEN RAISE EXCEPTION 'O mercado Trend ainda não foi configurado'; END IF;
+  IF _price IS NULL OR _price <= 0 OR _price > 1000000000000 THEN RAISE EXCEPTION 'Preço de negócio inválido'; END IF;
   INSERT INTO public.trend_orders(user_id, side, quantity, reference_price)
-  VALUES(auth.uid(), _side, _quantity, market_price)
+  VALUES(auth.uid(), _side, _quantity, _price)
   RETURNING * INTO result;
   RETURN result;
 END;
 $$;
-REVOKE ALL ON FUNCTION public.trend_create_order(text,numeric) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.trend_create_order(text,numeric) TO authenticated;
+REVOKE ALL ON FUNCTION public.trend_create_order(text,numeric,numeric) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.trend_create_order(text,numeric,numeric) TO authenticated;
