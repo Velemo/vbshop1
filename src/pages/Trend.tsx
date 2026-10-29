@@ -20,6 +20,7 @@ export default function Trend() {
  const [orders,setOrders] = useState<TrendOrder[]>([]);
  const [quantity,setQuantity] = useState("1");
  const [offerPrice,setOfferPrice] = useState("80004");
+ const [stopLoss,setStopLoss] = useState("");
  const [sendingOrder,setSendingOrder] = useState(false);
 
  const loadMarket = useCallback(async () => {
@@ -40,8 +41,12 @@ export default function Trend() {
   const qty=Number(quantity), price=Number(offerPrice);
   if(!Number.isFinite(qty)||qty<=0||qty>1000000){toast.error("Introduza uma quantidade válida.");return;}
   if(!Number.isFinite(price)||price<=0){toast.error("Introduza um preço de negócio válido.");return;}
+  const sl=stopLoss.trim()===""?null:Number(stopLoss);
+  if(sl!==null&&(!Number.isFinite(sl)||sl<=0)){toast.error("Introduza um Stop Loss válido.");return;}
+  if(sl!==null&&side==="buy"&&sl>=price){toast.error("Num Longo, o Stop Loss deve ficar abaixo do preço de entrada.");return;}
+  if(sl!==null&&side==="sell"&&sl<=price){toast.error("Num Curto, o Stop Loss deve ficar acima do preço de entrada.");return;}
   setSendingOrder(true);
-  const {error}=await (supabase as any).rpc("trend_create_order",{_side:side,_quantity:qty,_price:price});
+  const {error}=await (supabase as any).rpc("trend_create_order",{_side:side,_quantity:qty,_price:price,_stop_loss:sl});
   setSendingOrder(false);
   if(error){toast.error(error.message||"Não foi possível criar o pedido.");return;}
   toast.success(side==="buy"?"Pedido de compra registado.":"Pedido de venda registado.");
@@ -63,7 +68,7 @@ export default function Trend() {
   </section>
   <section className="px-4 py-4">
    <label className="mt-4 block text-sm text-neutral-300">Quantidade de ativos<input type="number" min="0.0001" step="0.0001" value={quantity} onChange={e=>setQuantity(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-neutral-950 p-3 text-white"/></label>
-   <label className="mt-3 block text-sm text-neutral-300">Preço por unidade negociado (vb$)<input type="number" min="0.01" step="0.01" value={offerPrice} onChange={e=>setOfferPrice(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-neutral-950 p-3 text-white"/></label><p className="mt-2 text-sm text-neutral-400">Valor proposto do negócio: {fmt(Number(quantity||0)*Number(offerPrice||0))} vb$</p>
+   <label className="mt-3 block text-sm text-neutral-300">Preço por unidade negociado (vb$)<input type="number" min="0.01" step="0.01" value={offerPrice} onChange={e=>setOfferPrice(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-neutral-950 p-3 text-white"/></label><label className="mt-3 block text-sm text-neutral-300">Stop Loss (vb$) — opcional<input type="number" min="0.01" step="0.01" placeholder="Defina o preço para limitar a perda" value={stopLoss} onChange={e=>setStopLoss(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-neutral-950 p-3 text-white"/></label><p className="mt-2 text-xs text-neutral-500">Longo: Stop Loss abaixo do preço. Curto: Stop Loss acima do preço.</p><p className="mt-2 text-sm text-neutral-400">Valor proposto do negócio: {fmt(Number(quantity||0)*Number(offerPrice||0))} vb$</p>
    <div className="mt-4 grid grid-cols-2 gap-3"><Button className="h-14 bg-green-600 text-base text-white hover:bg-green-700" disabled={sendingOrder} onClick={()=>void createOrder("buy")}><TrendingUp className="mr-2"/>Comprar / Longo</Button><Button className="h-14 bg-rose-600 text-base text-white hover:bg-rose-700" disabled={sendingOrder} onClick={()=>void createOrder("sell")}><TrendingDown className="mr-2"/>Vender / Curto</Button></div>
   </section>
  </main>;
