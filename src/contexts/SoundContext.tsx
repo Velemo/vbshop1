@@ -133,6 +133,31 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [audioReady, notificationsEnabled]);
 
+  const testNotification = useCallback(() => {
+    if (!notificationsEnabled) return;
+    const ctx = getContext();
+    if (!ctx) return;
+    void ctx.resume().then(() => {
+      setAudioReady(true);
+      const master = masterRef.current;
+      if (!master) return;
+      [880, 1174.66].forEach((frequency, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const now = ctx.currentTime + index * 0.09;
+        osc.type = "sine";
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.14, now + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.19);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      });
+    }).catch(() => setAudioReady(false));
+  }, [getContext, notificationsEnabled]);
+
   useEffect(() => {
     if (masterRef.current && contextRef.current) {
       masterRef.current.gain.setTargetAtTime(volume / 100, contextRef.current.currentTime, 0.04);
