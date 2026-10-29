@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { isVideo } from "@/lib/media";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { Button } from "@/components/ui/button";
+import { useSound } from "@/contexts/SoundContext";
 
 type Review = { id: string; user_id: string; rating: number; comment: string; created_at: string };
 
@@ -37,6 +38,7 @@ const ProductDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const { balance, refresh } = useWallet();
+  const { playNotification } = useSound();
 
   const load = async () => {
     if (!id) return;
@@ -82,6 +84,7 @@ const ProductDetail = () => {
     if (error) { toast.error(error.message); return; }
     await refresh();
     toast.success("Pagamento concluído. Conteúdo entregue no Correio.");
+    playNotification();
     navigate("/correio");
   };
 
@@ -92,7 +95,7 @@ const ProductDetail = () => {
       setInWishlist(false);
     } else {
       await supabase.from("wishlists").insert({ user_id: session.user.id, product_id: product.id });
-      setInWishlist(true); toast.success("Adicionado aos desejos");
+      setInWishlist(true); toast.success("Adicionado aos desejos"); playNotification();
     }
   };
 
@@ -107,6 +110,7 @@ const ProductDetail = () => {
     setSubmitting(false);
     if (error) { toast.error("Erro ao enviar"); return; }
     toast.success("Avaliação enviada!");
+    playNotification();
     load();
   };
 
