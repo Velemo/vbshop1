@@ -52,7 +52,12 @@ const empty: ProductForm = { name: "", description: "", category: "Mais", image_
 
 const Admin = () => {
   const [tab, setTab] = useState<Tab>("products");
-  const [products, setProducts] = useState<Product[]>([]);\n  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);\n  const [userSearch, setUserSearch] = useState("");\n  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);\n  const [userHistory, setUserHistory] = useState<UserHistory[]>([]);\n  const [loadingUserHistory, setLoadingUserHistory] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [userHistory, setUserHistory] = useState<UserHistory[]>([]);
+  const [loadingUserHistory, setLoadingUserHistory] = useState(false);
   const [editing, setEditing] = useState<ProductForm | null>(null);
   const [stats, setStats] = useState({ total: 0, last24: 0, last7: 0, unique: 0 });
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
