@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, Square, Check, Shield, Mail } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Sparkles, Square, Check, Shield, Mail, LogOut } from "lucide-react";
 import { useSettings, SiteMode } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -21,7 +21,8 @@ const options: { value: SiteMode; title: string; desc: string; icon: typeof Spar
 
 const Settings = () => {
   const { mode, setMode } = useSettings();
-  const { isAdmin, session } = useAuth();
+  const { isAdmin, session, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,6 +66,20 @@ const Settings = () => {
             </button>
           );
         })}
+
+        {session && (
+          <button
+            type="button"
+            onClick={async () => { await signOut(); navigate("/"); }}
+            className="w-full text-left flex gap-3 items-center p-4 rounded-2xl border border-border bg-card hover:bg-secondary/60 transition"
+          >
+            <span className="p-2 rounded-xl bg-primary/10 text-primary"><LogOut size={18} /></span>
+            <span className="flex-1">
+              <span className="block font-display font-semibold text-sm">Sair da conta</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">Terminar a sessão neste dispositivo.</span>
+            </span>
+          </button>
+        )}
 
         {isAdmin && (
           <Link
