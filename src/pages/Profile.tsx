@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music } from "lucide-react";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -167,6 +167,11 @@ const Profile = () => {
               <Music size={28} strokeWidth={1.8} />
               <span className="leading-tight">Música</span>
             </button>
+            {isAdmin && <Link to="/admin?section=pedidos" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-1 py-4 text-center text-xs font-semibold text-primary hover:bg-primary/10 sm:text-sm">
+              <MessageSquareText size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Pedidos</span>
+              <span className="text-[10px] font-normal text-muted-foreground">Caixa de mensagens</span>
+            </Link>}
           </div>
           {showVipDetails && <section className="mt-3 rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4">
             <div className="flex items-center gap-2 font-semibold"><Crown size={20} className="text-amber-400" /> Zona VIP {isVip && <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-500">VIP</span>}</div>
