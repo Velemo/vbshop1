@@ -10,7 +10,6 @@ type SoundContextValue = {
   audioReady: boolean;
   enableAudio: () => void;
   playNotification: () => void;
-  testNotification: () => void;
 };
 const SoundContext = createContext<SoundContextValue | null>(null);
 type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
@@ -148,7 +147,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
     void contextRef.current?.close();
   }, [stopMusic]);
 
-  return <SoundContext.Provider value={{ notificationsEnabled, setNotificationsEnabled, musicEnabled, setMusicEnabled, volume, setVolume, audioReady, enableAudio, playNotification, testNotification }}>{children}</SoundContext.Provider>;
+  return <SoundContext.Provider value={{ notificationsEnabled, setNotificationsEnabled, musicEnabled, setMusicEnabled, volume, setVolume, audioReady, enableAudio, playNotification }}>{children}</SoundContext.Provider>;
 };
 
 export const useSound = () => {
