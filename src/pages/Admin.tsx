@@ -9,7 +9,7 @@ import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 
 type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes";
-type AdminUser = { user_id: string; email: string | null; account_created_at: string; user_code: string | null; display_name: string | null; balance: number; tickets: number };
+type AdminUser = { user_id: string; email: string | null; account_created_at: string; user_code: string | null; display_name: string | null; avatar_url: string | null; balance: number; tickets: number };
 type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
@@ -460,8 +460,11 @@ const Admin = () => {
             <div className="space-y-2">
               {adminUsers.filter(u => [u.user_code, u.display_name, u.email, u.user_id].some(v => (v || "").toLowerCase().includes(userSearch.toLowerCase()))).map(user => (
                 <button key={user.user_id} onClick={() => void openUserHistory(user)} className={`w-full rounded-xl border p-3 text-left ${selectedUser?.user_id === user.user_id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0"><p className="font-semibold truncate">{user.display_name || "Sem nome"}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1">{user.user_code || "ID pendente"}</p></div>
+                  <div className="flex items-start gap-3">
+                    <div className="size-12 shrink-0 overflow-hidden rounded-full border border-border bg-secondary grid place-items-center">
+                      {user.avatar_url ? <img src={user.avatar_url} alt={`Foto de ${user.display_name || "utilizador"}`} className="size-full object-cover" /> : <span className="text-sm font-semibold text-muted-foreground">{(user.display_name || user.user_code || "?").slice(0, 1).toUpperCase()}</span>}
+                    </div>
+                    <div className="min-w-0 flex-1"><p className="font-semibold truncate">{user.display_name || "Sem nome"}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1">ID público: {user.user_code || "Pendente"}</p><p className="font-mono text-[10px] text-muted-foreground mt-1 break-all">UUID: {user.user_id}</p></div>
                     <div className="shrink-0 text-right"><p className="font-semibold">{Number(user.balance || 0).toLocaleString("pt-MZ")} vb$</p><p className="text-xs text-muted-foreground">{user.tickets} bilhete(s)</p><p className="text-[11px] text-muted-foreground mt-1">{new Date(user.account_created_at).toLocaleDateString("pt-MZ")}</p></div>
                   </div>
                 </button>
