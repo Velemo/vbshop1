@@ -20,6 +20,7 @@ import Roleta from "./pages/Roleta";
 import Correio from "./pages/Correio";
 import SendVb from "./pages/SendVb";
 import P2P from "./pages/P2P";
+import Trend from "./pages/Trend";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/correio" element={<Correio />} />
               <Route path="/send-vb" element={<SendVb />} />
               <Route path="/p2p" element={<P2P />} />
+              <Route path="/trend" element={<Trend />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
