@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, LogOut, Settings, UserRound, Mail, Camera, Send, ArrowLeftRight } from "lucide-react";
+import { Heart, Settings, UserRound, Mail, Camera, Send, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -141,10 +141,6 @@ const Profile = () => {
               <Mail size={28} strokeWidth={1.8} />
               <span className="leading-tight">Correio</span>
             </Link>
-            <button type="button" onClick={async () => { await signOut(); navigate("/"); }} className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
-              <LogOut size={28} strokeWidth={1.8} />
-              <span className="leading-tight">Sair da conta</span>
-            </button>
           </div>
           <Link to="/settings" className="mt-3 flex items-center gap-3 border-t border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
         </div>
