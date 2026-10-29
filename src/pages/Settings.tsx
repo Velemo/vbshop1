@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Sparkles, Square, Check, Shield, Mail, LogOut, Bell, Music2, Volume2, Play } from "lucide-react";
+import { ArrowLeft, Sparkles, Square, Check, Shield, Mail, LogOut, Bell, Music2, Volume2, Play, Pause } from "lucide-react";
 import { useSettings, SiteMode } from "@/contexts/SettingsContext";
 import { useSound } from "@/contexts/SoundContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,7 @@ const options: { value: SiteMode; title: string; desc: string; icon: typeof Spar
 const Settings = () => {
   const { mode, setMode } = useSettings();
   const { isAdmin, session, signOut } = useAuth();
-  const { notificationsEnabled, setNotificationsEnabled, musicEnabled, setMusicEnabled, volume, setVolume, audioReady, enableAudio, testNotification } = useSound();
+  const { notificationsEnabled, setNotificationsEnabled, musicEnabled, setMusicEnabled, volume, setVolume, audioReady, enableAudio, testNotification, musicName, musicPlaying, toggleMusicPlayback } = useSound();
   const navigate = useNavigate();
 
   return (
@@ -52,6 +52,14 @@ const Settings = () => {
             <div className="flex-1"><p className="text-sm font-medium">Música de fundo</p><p className="text-xs text-muted-foreground">Melodia ambiente em ciclo, criada por síntese de áudio.</p></div>
             <button type="button" role="switch" aria-checked={musicEnabled} onClick={() => { const next = !musicEnabled; setMusicEnabled(next); if (next) enableAudio(); }} className={`relative h-6 w-11 rounded-full transition ${musicEnabled ? "bg-primary" : "bg-muted"}`}><span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${musicEnabled ? "left-[22px]" : "left-0.5"}`} /></button>
           </div>
+          {musicName && <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-sm font-medium">Música escolhida pelo administrador</p>
+            <p className="text-xs text-muted-foreground break-all">{musicName}</p>
+            <button type="button" disabled={!musicEnabled} onClick={() => { if (!audioReady) enableAudio(); toggleMusicPlayback(); }} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium disabled:opacity-50">
+              {musicPlaying ? <Pause size={16} /> : <Play size={16} />}
+              {musicPlaying ? "Pausar música" : "Reproduzir música"}
+            </button>
+          </div>}
           <div className="space-y-2">
             <div className="flex items-center justify-between"><label htmlFor="site-sound-volume" className="flex items-center gap-2 text-sm font-medium"><Volume2 size={16} /> Volume geral</label><span className="text-sm tabular-nums text-muted-foreground">{volume}%</span></div>
             <input id="site-sound-volume" type="range" min="0" max="100" step="1" value={volume} onChange={e => setVolume(Number(e.target.value))} className="w-full accent-primary" />
