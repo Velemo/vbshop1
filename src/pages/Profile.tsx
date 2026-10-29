@@ -85,7 +85,7 @@ const Profile = () => {
 
   return (
     <main className="mx-auto max-w-xl px-4 pt-0 pb-28 min-h-screen">
-      <div className="mt-0 flex flex-col items-center gap-4 border-b border-border pb-6">
+      <div className="mt-8 flex flex-col items-center gap-4 border-b border-border pb-6">
         {session ? (
           <>
             <button type="button" onClick={() => fileInput.current?.click()} disabled={uploadingAvatar} aria-label="Alterar foto de perfil" className="relative grid size-24 place-items-center overflow-hidden rounded-full bg-secondary text-primary ring-2 ring-border hover:ring-primary disabled:opacity-60">
