@@ -33,7 +33,7 @@ const Correio = () => {
         : !session ? <div className="mt-8 text-sm"><Link to="/auth" className="text-primary font-semibold">Entrar</Link> para ver o seu Correio.</div>
         : error ? <p className="mt-8 text-sm text-destructive">Não foi possível carregar o Correio.</p>
         : <>
-          <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+          <div className="mt-0 grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
             <button type="button" onClick={() => setTipoEntrega("premios")} className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${tipoEntrega === "premios" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}><Gift size={16} className="inline mr-2" />Prémios ({messages.length})</button>
             <button type="button" onClick={() => setTipoEntrega("compras")} className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${tipoEntrega === "compras" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}><ShoppingBag size={16} className="inline mr-2" />Compras ({purchases.length})</button>
           </div>
