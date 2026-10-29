@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown } from "lucide-react";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -159,6 +159,10 @@ const Profile = () => {
               <Crown size={28} strokeWidth={1.8} className={isVip ? "text-amber-400" : ""} />
               <span className="leading-tight">{isVip ? "Zona VIP ativa" : vipLoading ? "A ativar..." : "Zona VIP"}</span>
             </button>
+            <Link to="/trend" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <TrendingUp size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Trend</span>
+            </Link>
           </div>
           {showVipDetails && <section className="mt-3 rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4">
             <div className="flex items-center gap-2 font-semibold"><Crown size={20} className="text-amber-400" /> Zona VIP {isVip && <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-500">VIP</span>}</div>
