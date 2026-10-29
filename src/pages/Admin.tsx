@@ -75,7 +75,13 @@ const Admin = () => {
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
   const [available, setAvailable] = useState<Record<string, number>>({});
-  const [savingProduct, setSavingProduct] = useState(false);\n  const [musicPanelOpen, setMusicPanelOpen] = useState(false);\n  const [broadcastMusicUrl, setBroadcastMusicUrl] = useState("");\n  const [broadcastMusicName, setBroadcastMusicName] = useState("");\n  const [broadcastPlaying, setBroadcastPlaying] = useState(false);\n  const [musicBusy, setMusicBusy] = useState(false);\n  const [musicProgress, setMusicProgress] = useState(0);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [musicPanelOpen, setMusicPanelOpen] = useState(false);
+  const [broadcastMusicUrl, setBroadcastMusicUrl] = useState("");
+  const [broadcastMusicName, setBroadcastMusicName] = useState("");
+  const [broadcastPlaying, setBroadcastPlaying] = useState(false);
+  const [musicBusy, setMusicBusy] = useState(false);
+  const [musicProgress, setMusicProgress] = useState(0);
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
     setProgress({ label: `${label}: ${file.name}`, percent: 0 });
@@ -287,7 +293,8 @@ const Admin = () => {
     if (error) { toast.error(error.message); return; }
     setBroadcastMusicUrl(""); setBroadcastMusicName(""); setBroadcastPlaying(false); toast.success("Música removida.");
   };
-\n  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); loadBroadcastMusic(); }, []);
+
+  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); loadBroadcastMusic(); }, []);
 
   const startEdit = async (p?: Product) => {
     if (p) {
@@ -683,7 +690,8 @@ const Admin = () => {
               <p className="text-xs text-muted-foreground">A reprodução automática depende das regras do navegador: cada utilizador poderá ter de tocar em Reproduzir uma vez. A música fica em repetição contínua.</p>
             </section>
           </div>}
-\n      {editing && (
+
+      {editing && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur grid place-items-center p-4 overflow-y-auto">
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-5 space-y-3 my-8">
             <div className="flex justify-between items-center">
