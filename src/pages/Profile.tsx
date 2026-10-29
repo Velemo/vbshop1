@@ -124,12 +124,29 @@ const Profile = () => {
               <Button onClick={redeem}>Recarregar</Button>
             </div>
           </div>
-          <Link to="/send-vb" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Send size={20} /> Enviar vb$</Link>
-          <Link to="/p2p" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><ArrowLeftRight size={20} /> P2P — Comprar vb$</Link>
-          <Link to="/wishlist" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Heart size={20} /> Lista de desejos</Link>
-          <Link to="/correio" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Mail size={20} /> Correio</Link>
-          <Link to="/settings" className="flex items-center gap-3 border-b border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
-          <Button variant="ghost" className="mt-4 gap-3 px-0" onClick={async () => { await signOut(); navigate("/"); }}><LogOut size={20} /> Sair da conta</Button>
+          <div className="grid grid-cols-4 gap-2">
+            <Link to="/send-vb" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <Send size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Enviar vb$</span>
+            </Link>
+            <Link to="/p2p" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <ArrowLeftRight size={28} strokeWidth={1.8} />
+              <span className="leading-tight">P2P — Comprar vb$</span>
+            </Link>
+            <Link to="/wishlist" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <Heart size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Lista de desejos</span>
+            </Link>
+            <Link to="/correio" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <Mail size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Correio</span>
+            </Link>
+            <button type="button" onClick={async () => { await signOut(); navigate("/"); }} className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <LogOut size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Sair da conta</span>
+            </button>
+          </div>
+          <Link to="/settings" className="mt-3 flex items-center gap-3 border-t border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
         </div>
       )}
       {!session && <Link to="/settings" className="mt-6 flex items-center gap-3 text-sm text-muted-foreground hover:text-primary"><Settings size={20} /> Definições</Link>}
