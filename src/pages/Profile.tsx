@@ -167,10 +167,10 @@ const Profile = () => {
               <Music size={28} strokeWidth={1.8} />
               <span className="leading-tight">Música</span>
             </button>
-            {isAdmin && <Link to="/admin?section=pedidos" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-1 py-4 text-center text-xs font-semibold text-primary hover:bg-primary/10 sm:text-sm">
+            {isAdmin && <Link to="/pedidos" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-1 py-4 text-center text-xs font-semibold text-primary hover:bg-primary/10 sm:text-sm">
               <MessageSquareText size={28} strokeWidth={1.8} />
               <span className="leading-tight">Pedidos</span>
-              <span className="text-[10px] font-normal text-muted-foreground">Caixa de mensagens</span>
+              
             </Link>}
           </div>
           {showVipDetails && <section className="mt-3 rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4">
