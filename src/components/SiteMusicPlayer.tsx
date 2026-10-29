@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 const SiteMusicPlayer = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [url, setUrl] = useState("");
-  const [name, setName] = useState("");
   const [broadcastPlaying, setBroadcastPlaying] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -15,12 +14,12 @@ const SiteMusicPlayer = () => {
     const load = async () => {
       const { data } = await (supabase as any).from("site_music_broadcast").select("music_url,music_name,is_playing").eq("id", 1).maybeSingle();
       if (!alive || !data) return;
-      setUrl(data.music_url || ""); setName(data.music_name || ""); setBroadcastPlaying(!!data.is_playing);
+      setUrl(data.music_url || ""); setBroadcastPlaying(!!data.is_playing);
     };
     void load();
     const channel = supabase.channel("site-music-broadcast-listener").on("postgres_changes", { event: "*", schema: "public", table: "site_music_broadcast" }, (payload: any) => {
       const row = payload.new || {};
-      setUrl(row.music_url || ""); setName(row.music_name || ""); setBroadcastPlaying(!!row.is_playing);
+      setUrl(row.music_url || ""); setBroadcastPlaying(!!row.is_playing);
     }).subscribe();
     return () => { alive = false; void supabase.removeChannel(channel); };
   }, []);
