@@ -752,6 +752,17 @@ const Admin = () => {
               <input type="checkbox" checked={!!editing.allow_discount} onChange={e => setEditing({ ...editing, allow_discount: e.target.checked })} />
               Aceitar código de desconto
             </label>
+            <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <label className="flex items-start gap-3 text-sm font-semibold">
+                <input type="checkbox" className="mt-1 size-4 accent-primary" />
+                <span>Pergunta obrigatória antes do pagamento
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">Ative para mostrar uma pergunta ao cliente antes de pagar com vb$.</span>
+                </span>
+              </label>
+              <label className="block space-y-1 text-xs font-medium">Pergunta para o cliente
+                <textarea rows={3} maxLength={500} placeholder="Escreva aqui a pergunta que o cliente deverá responder..." className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-normal" />
+              </label>
+            </section>
             {[
               { k: "name", label: "Nome", placeholder: "Nome do produto" },
               { k: "description", label: "Descrição", placeholder: "Descrição completa", textarea: true },
