@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon, Music, Play, Pause } from "lucide-react";
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
@@ -75,7 +75,7 @@ const Admin = () => {
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
   const [available, setAvailable] = useState<Record<string, number>>({});
-  const [savingProduct, setSavingProduct] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);\n  const [musicPanelOpen, setMusicPanelOpen] = useState(false);\n  const [broadcastMusicUrl, setBroadcastMusicUrl] = useState("");\n  const [broadcastMusicName, setBroadcastMusicName] = useState("");\n  const [broadcastPlaying, setBroadcastPlaying] = useState(false);\n  const [musicBusy, setMusicBusy] = useState(false);\n  const [musicProgress, setMusicProgress] = useState(0);
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
     setProgress({ label: `${label}: ${file.name}`, percent: 0 });
@@ -257,7 +257,37 @@ const Admin = () => {
     loadCodes();
   };
 
-  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); }, []);
+  const loadBroadcastMusic = async () => {
+    const { data } = await (supabase as any).from("site_music_broadcast").select("music_url,music_name,is_playing").eq("id", 1).maybeSingle();
+    if (data) { setBroadcastMusicUrl(data.music_url || ""); setBroadcastMusicName(data.music_name || ""); setBroadcastPlaying(!!data.is_playing); }
+  };
+  const uploadBroadcastMusic = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) { toast.error("Escolhe um ficheiro de áudio."); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error("O ficheiro deve ter no máximo 20 MB."); return; }
+    setMusicBusy(true); setMusicProgress(0);
+    const result = await uploadWithProgress("products", file, setMusicProgress);
+    setMusicBusy(false);
+    if (result.error || !result.url) { toast.error(result.error || "Falha ao carregar música."); return; }
+    const { error } = await (supabase as any).from("site_music_broadcast").upsert({ id: 1, music_url: result.url, music_name: file.name, is_playing: true, updated_at: new Date().toISOString() });
+    if (error) { toast.error("Música carregada, mas não foi possível activar: " + error.message); return; }
+    setBroadcastMusicUrl(result.url); setBroadcastMusicName(file.name); setBroadcastPlaying(true);
+    toast.success("Música definida para os utilizadores.");
+  };
+  const toggleBroadcastMusic = async () => {
+    if (!broadcastMusicUrl) { toast.error("Carrega primeiro uma música."); return; }
+    const next = !broadcastPlaying;
+    const { error } = await (supabase as any).from("site_music_broadcast").upsert({ id: 1, music_url: broadcastMusicUrl, music_name: broadcastMusicName, is_playing: next, updated_at: new Date().toISOString() });
+    if (error) { toast.error("Não foi possível actualizar a música: " + error.message); return; }
+    setBroadcastPlaying(next); toast.success(next ? "Música activada para o site." : "Música pausada para o site.");
+  };
+  const clearBroadcastMusic = async () => {
+    const { error } = await (supabase as any).from("site_music_broadcast").upsert({ id: 1, music_url: null, music_name: null, is_playing: false, updated_at: new Date().toISOString() });
+    if (error) { toast.error(error.message); return; }
+    setBroadcastMusicUrl(""); setBroadcastMusicName(""); setBroadcastPlaying(false); toast.success("Música removida.");
+  };
+\n  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); loadBroadcastMusic(); }, []);
 
   const startEdit = async (p?: Product) => {
     if (p) {
@@ -638,7 +668,22 @@ const Admin = () => {
 
 
       {/* Editor modal */}
-      {editing && (
+          <button type="button" onClick={() => setMusicPanelOpen(true)} aria-label="Música do site" title="Música do site" className="fixed bottom-24 right-4 z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-xl ring-2 ring-background hover:scale-105 transition">
+            <Music size={23} />
+          </button>
+          {musicPanelOpen && <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3" onClick={() => setMusicPanelOpen(false)}>
+            <section role="dialog" aria-modal="true" aria-label="Música global do site" onClick={e => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between"><h2 className="font-semibold text-lg flex items-center gap-2"><Music size={20}/> Música do Site</h2><button onClick={() => setMusicPanelOpen(false)} aria-label="Fechar"><X size={20}/></button></div>
+              <p className="text-sm text-muted-foreground">A música toca em ciclo para os utilizadores que iniciarem a reprodução no site. Carregar outra música substitui a actual; pausar interrompe a transmissão global.</p>
+              <label className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border p-4 cursor-pointer hover:bg-secondary">
+                <Upload size={18}/>{musicBusy ? `A carregar ${musicProgress}%` : "Carregar música do dispositivo"}
+                <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac" className="hidden" disabled={musicBusy} onChange={uploadBroadcastMusic}/>
+              </label>
+              {broadcastMusicName && <div className="rounded-xl bg-secondary/60 p-3 space-y-2"><p className="text-sm font-medium break-all">{broadcastMusicName}</p><audio src={broadcastMusicUrl} controls loop preload="metadata" className="w-full"/><div className="flex gap-2"><Button onClick={toggleBroadcastMusic} className="flex-1">{broadcastPlaying ? <><Pause size={16} className="mr-2"/>Pausar para todos</> : <><Play size={16} className="mr-2"/>Tocar para todos</>}</Button><Button variant="outline" onClick={clearBroadcastMusic}>Remover</Button></div></div>}
+              <p className="text-xs text-muted-foreground">A reprodução automática depende das regras do navegador: cada utilizador poderá ter de tocar em Reproduzir uma vez. A música fica em repetição contínua.</p>
+            </section>
+          </div>}
+\n      {editing && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur grid place-items-center p-4 overflow-y-auto">
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-5 space-y-3 my-8">
             <div className="flex justify-between items-center">
