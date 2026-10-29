@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type SoundContextValue = {
   notificationsEnabled: boolean;
@@ -22,6 +23,10 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
     return Number.isFinite(saved) && saved >= 0 && saved <= 100 ? saved : 35;
   });
   const [audioReady, setAudioReady] = useState(false);
+  const [musicUrl, setMusicUrl] = useState("");
+  const [musicName, setMusicName] = useState("");
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const uploadedAudioRef = useRef<HTMLAudioElement | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
   const musicNodesRef = useRef<AudioNode[]>([]);
@@ -57,6 +62,7 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const stopMusic = useCallback(() => {
+    if (uploadedAudioRef.current) { uploadedAudioRef.current.pause(); setMusicPlaying(false); }
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
     musicNodesRef.current.forEach(node => {
@@ -68,6 +74,11 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
 
   const startMusic = useCallback((ctx: AudioContext) => {
     stopMusic();
+    if (musicUrl && uploadedAudioRef.current) {
+      uploadedAudioRef.current.volume = volume / 100;
+      void uploadedAudioRef.current.play().then(() => setMusicPlaying(true)).catch(() => setMusicPlaying(false));
+      return;
+    }
     const master = masterRef.current;
     if (!master) return;
     // Original synthesized ambient loop: warm drone, pentatonic plucks and soft rhythmic pulses.
@@ -131,6 +142,60 @@ export const SoundProvider = ({ children }: { children: ReactNode }) => {
       osc.connect(gain); gain.connect(master); osc.start(now); osc.stop(now + 0.2);
     });
   }, [audioReady, notificationsEnabled]);
+
+  const testNotification = useCallback(() => {
+    if (!notificationsEnabled) return;
+    const ctx = getContext();
+    if (!ctx) return;
+    void ctx.resume().then(() => {
+      setAudioReady(true);
+      const master = masterRef.current;
+      if (!master) return;
+      [880, 1174.66].forEach((frequency, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const now = ctx.currentTime + index * 0.09;
+        osc.type = "sine";
+        osc.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.14, now + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.19);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      });
+    }).catch(() => setAudioReady(false));
+  }, [getContext, notificationsEnabled]);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data } = await (supabase as any).from("site_music_settings").select("music_url,music_name").eq("id", 1).maybeSingle();
+      if (active && data) { setMusicUrl(data.music_url || ""); setMusicName(data.music_name || ""); }
+    };
+    void load();
+    const channel = supabase.channel("site-music-settings-live").on("postgres_changes", { event: "*", schema: "public", table: "site_music_settings" }, (payload: any) => {
+      const row = payload.new || {}; setMusicUrl(row.music_url || ""); setMusicName(row.music_name || "");
+    }).subscribe();
+    return () => { active = false; void supabase.removeChannel(channel); };
+  }, []);
+
+  useEffect(() => {
+    const audio = uploadedAudioRef.current;
+    if (!audio) return;
+    audio.volume = volume / 100;
+    if (audio.src !== musicUrl) { audio.pause(); audio.src = musicUrl; audio.load(); setMusicPlaying(false); }
+  }, [musicUrl, volume]);
+
+  const toggleMusicPlayback = useCallback(() => {
+    const audio = uploadedAudioRef.current;
+    if (!audio || !musicUrl) return;
+    if (audio.paused) {
+      audio.volume = volume / 100;
+      void audio.play().then(() => { setMusicPlaying(true); setAudioReady(true); }).catch(() => setMusicPlaying(false));
+    } else { audio.pause(); setMusicPlaying(false); }
+  }, [musicUrl, volume]);
 
   useEffect(() => {
     if (masterRef.current && contextRef.current) {

@@ -8,7 +8,7 @@ import { uploadWithProgress } from "@/lib/upload";
 import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 
-type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes";
+type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes" | "site";
 type AdminUser = { user_id: string; email: string | null; account_created_at: string; user_code: string | null; display_name: string | null; balance: number; tickets: number };
 type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
@@ -75,7 +75,7 @@ const Admin = () => {
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [progress, setProgress] = useState<{ label: string; percent: number } | null>(null);
   const [available, setAvailable] = useState<Record<string, number>>({});
-  const [savingProduct, setSavingProduct] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);\n  const [siteMusicUrl, setSiteMusicUrl] = useState("");\n  const [siteMusicName, setSiteMusicName] = useState("");\n  const [siteMusicSaving, setSiteMusicSaving] = useState(false);\n  const [siteMusicUploading, setSiteMusicUploading] = useState(false);
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
     setProgress({ label: `${label}: ${file.name}`, percent: 0 });
@@ -257,7 +257,31 @@ const Admin = () => {
     loadCodes();
   };
 
-  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); }, []);
+  const loadSiteMusic = async () => {
+    const { data } = await (supabase as any).from("site_music_settings").select("music_url,music_name").eq("id", 1).maybeSingle();
+    if (data) { setSiteMusicUrl(data.music_url || ""); setSiteMusicName(data.music_name || ""); }
+  };
+  const onSiteMusic = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) { toast.error("Escolha um ficheiro de áudio."); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error("O ficheiro deve ter no máximo 20 MB."); return; }
+    setSiteMusicUploading(true);
+    const url = await uploadImage(file, "A carregar música");
+    setSiteMusicUploading(false);
+    if (url) { setSiteMusicUrl(url); setSiteMusicName(file.name); }
+  };
+  const saveSiteMusic = async () => {
+    setSiteMusicSaving(true);
+    const { error } = await (supabase as any).from("site_music_settings").upsert({
+      id: 1, music_url: siteMusicUrl || null, music_name: siteMusicName || null, updated_at: new Date().toISOString(),
+    });
+    setSiteMusicSaving(false);
+    if (error) { toast.error("Não foi possível guardar a música: " + error.message); return; }
+    toast.success("Música do site actualizada para todos os utilizadores.");
+  };
+
+  useEffect(() => { loadProducts(); loadVisits(); loadAd(); loadSlots(); loadCodes(); loadAdminUsers(); loadSiteMusic(); }, []);
 
   const startEdit = async (p?: Product) => {
     if (p) {
@@ -372,10 +396,10 @@ const Admin = () => {
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
-          {(["products", "users", "visits", "ad", "roleta", "codes"] as Tab[]).map(t => (
+          {(["products", "users", "visits", "ad", "roleta", "codes", "site"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3 py-2.5 text-sm whitespace-nowrap font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {({ products: "Produtos", users: "Utilizadores", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$" } as Record<Tab, string>)[t]}
+              {({ products: "Produtos", users: "Utilizadores", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$", site: "Gestão do Site" } as Record<Tab, string>)[t]}
             </button>
           ))}
         </div>
@@ -511,6 +535,31 @@ const Admin = () => {
             </button>
           </div>
         )}
+        {tab === "site" && (
+          <section className="max-w-xl space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Gestão do Site</h2>
+              <p className="text-sm text-muted-foreground mt-1">Escolha uma música de fundo para todos os utilizadores que tenham a música activa nas definições. O áudio só começa após o utilizador activar a reprodução.</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <label className="text-sm font-medium">Música de fundo global (máx. 20 MB)</label>
+              <label className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-sm font-medium cursor-pointer hover:bg-accent">
+                <Upload size={16} /> {siteMusicUploading ? "A carregar..." : "Carregar música do dispositivo"}
+                <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac" className="hidden" disabled={siteMusicUploading} onChange={onSiteMusic} />
+              </label>
+              {siteMusicName && <div className="space-y-2">
+                <p className="text-sm break-all">{siteMusicName}</p>
+                {siteMusicUrl && <audio src={siteMusicUrl} controls preload="metadata" className="w-full" />}
+                <button type="button" onClick={() => { setSiteMusicUrl(""); setSiteMusicName(""); }} className="text-sm text-destructive underline">Remover música seleccionada</button>
+              </div>}
+              {!siteMusicName && <p className="text-xs text-muted-foreground">Ainda não foi seleccionada uma música personalizada. O site continuará a usar o som ambiente original.</p>}
+              <Button onClick={saveSiteMusic} disabled={siteMusicSaving || siteMusicUploading}>
+                {siteMusicSaving ? "A guardar..." : "Guardar música para todos"}
+              </Button>
+            </div>
+          </section>
+        )}
+
         {tab === "roleta" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Coloque uma imagem e o nome do prémio em cada um dos 10 quadrados da roleta (o 1 fica no topo, seguindo no sentido do relógio).</p>
