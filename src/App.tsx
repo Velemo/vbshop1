@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { SoundProvider } from "@/contexts/SoundContext";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -54,33 +53,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <SettingsProvider>
-        <SoundProvider>
-          <BrowserRouter>
-            <AuthProvider>
-              <div className="h-dvh flex flex-col overflow-hidden bg-background">
-                <VisitTracker />
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    <Route path="/wishlist" element={<Wishlist />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/perfil" element={<Profile />} />
-                    <Route path="/roleta" element={<Roleta />} />
-                    <Route path="/correio" element={<Correio />} />
-                    <Route path="/send-vb" element={<SendVb />} />
-                    <Route path="/p2p" element={<P2P />} />
-                    <Route path="/trend" element={<Trend />} />
-                    <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-                <BottomNav />
-              </div>
-            </AuthProvider>
-          </BrowserRouter>
-        </SoundProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <div className="h-dvh flex flex-col overflow-hidden bg-background">
+            <VisitTracker />
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/perfil" element={<Profile />} />
+              <Route path="/roleta" element={<Roleta />} />
+              <Route path="/correio" element={<Correio />} />
+              <Route path="/send-vb" element={<SendVb />} />
+              <Route path="/p2p" element={<P2P />} />
+              <Route path="/trend" element={<Trend />} />
+              <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            </div>
+            <BottomNav />
+            </div>
+          </AuthProvider>
+        </BrowserRouter>
       </SettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>
