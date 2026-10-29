@@ -21,6 +21,10 @@ export default function Trend() {
  const [quantity,setQuantity] = useState("1");
  const [offerPrice,setOfferPrice] = useState("80004");
  const [stopLoss,setStopLoss] = useState("");
+ const [siteBalance,setSiteBalance] = useState(0);
+ const [trendBalance,setTrendBalance] = useState(0);
+ const [convertAmount,setConvertAmount] = useState("");
+ const [converting,setConverting] = useState(false);
  const [sendingOrder,setSendingOrder] = useState(false);
 
  const loadMarket = useCallback(async () => {
@@ -28,13 +32,33 @@ export default function Trend() {
   if(error){toast.error("Não foi possível carregar o preço Trend. Confirme se a migração Trend foi aplicada.");return;}
   if(data){setMarket(data);}
  },[]);
+ const loadBalances = useCallback(async () => {
+  if(!session){setSiteBalance(0);setTrendBalance(0);return;}
+  const [{data:site,error:siteError},{data:trend,error:trendError}]=await Promise.all([
+   (supabase as any).from("wallets").select("balance").eq("user_id",session.user.id).maybeSingle(),
+   (supabase as any).from("trend_wallets").select("balance").eq("user_id",session.user.id).maybeSingle()
+  ]);
+  if(siteError||trendError){toast.error("Não foi possível carregar os saldos. Confirme se a migração Trend foi aplicada.");return;}
+  setSiteBalance(Number(site?.balance||0));setTrendBalance(Number(trend?.balance||0));
+ },[session?.user.id]);
+ const convertToTrend = async () => {
+  if(!session){toast.error("Entre na sua conta.");return;}
+  const amount=Number(convertAmount);
+  if(!Number.isFinite(amount)||amount<=0){toast.error("Introduza um valor válido para converter.");return;}
+  if(amount>siteBalance){toast.error("Não tem vb$ suficiente na carteira do site.");return;}
+  setConverting(true);
+  const {error}=await (supabase as any).rpc("convert_vb_to_trend",{_amount:amount});
+  setConverting(false);
+  if(error){toast.error(error.message||"Não foi possível converter.");return;}
+  setConvertAmount("");await loadBalances();toast.success("vb$ convertidos para a carteira de negociação Trend.");
+ };
  const loadOrders = useCallback(async () => {
   if(!session)return;
   const {data,error} = await (supabase as any).from("trend_orders").select("id,side,quantity,reference_price,status,created_at").eq("user_id",session.user.id).order("created_at",{ascending:false}).limit(10);
   if(error){toast.error("Não foi possível carregar os seus pedidos Trend.");return;}
   setOrders((data||[]) as TrendOrder[]);
  },[session?.user.id]);
- useEffect(()=>{void loadMarket();void loadOrders();},[loadMarket,loadOrders]);
+ useEffect(()=>{void loadMarket();void loadOrders();void loadBalances();},[loadMarket,loadOrders,loadBalances]);
 
  const createOrder = async (side:"buy"|"sell") => {
   if(!session){toast.error("Entre para enviar um pedido.");return;}
@@ -65,6 +89,16 @@ export default function Trend() {
   <section className="border-b border-white/10">
    <div className="flex items-center justify-between gap-2 overflow-x-auto px-3 py-3"><div className="flex gap-1">{["1m","15m","1h","4h","1D","1W"].map(v=><button key={v} onClick={()=>setInterval(v)} className={"rounded-lg px-3 py-2 text-sm "+(interval===v?"bg-white/15 font-semibold":"text-neutral-400")}>{v}</button>)}</div><div className="flex items-center gap-3"><CandlestickChart/><span className="italic">ƒx</span><button onClick={()=>{setRefreshing(true);void loadMarket().finally(()=>setRefreshing(false));}} aria-label="Atualizar"><RefreshCw className={refreshing?"animate-spin":""}/></button></div></div>
    <div className="px-3 pt-3"><div className="mb-2 inline-block rounded bg-neutral-900 px-2 py-2 text-sm text-neutral-300">MARCHA vb · {interval} · Mercado</div><div className="relative h-[320px] overflow-hidden border border-white/10 bg-black sm:h-[390px]"><div className="absolute inset-0 grid grid-cols-4 grid-rows-5">{Array.from({length:20},(_,i)=><div key={i} className="border-b border-r border-white/[0.07]"/>)}</div><svg viewBox="0 0 350 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">{candles.map(([x,o,c,h,l],i)=>{const up=c<o,y=(v:number)=>8+v*.82,top=Math.min(y(o),y(c)),height=Math.max(1.5,Math.abs(y(c)-y(o)));return <g key={i} stroke={up?"#16a34a":"#f43f5e"} fill={up?"#16a34a":"#f43f5e"}><line x1={x} x2={x} y1={y(h)} y2={y(l)} strokeWidth=".8"/><rect x={x-3} y={top} width="6" height={height}/></g>})}<line x1="0" y1="67" x2="350" y2="67" stroke="#16a34a" strokeDasharray="2 2"/></svg><div className="absolute right-0 top-[65%] bg-green-600 px-2 py-1 text-xs">{fmt(Number(market.price))}</div><div className="absolute left-2 top-2 text-xs text-emerald-400">{fmt(Number(market.price))} · preço administrado</div><div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-xs">Volume demonstrativo</div></div><div className="flex justify-between py-3 text-xs text-neutral-400"><span>Histórico</span><span>Preço MARCHA vb</span><span>{interval}</span></div></div>
+  </section>
+  <section className="mx-4 my-4 rounded-2xl border border-white/10 bg-neutral-950 p-4">
+   <h2 className="text-lg font-semibold">Converter vb$</h2>
+   <p className="mt-1 text-sm text-neutral-400">Transfere saldo da carteira normal do site para a carteira usada nas negociações do Trend. Conversão 1:1, sem taxa.</p>
+   <div className="mt-3 grid grid-cols-2 gap-3">
+    <div className="rounded-xl bg-white/5 p-3"><p className="text-xs text-neutral-400">Carteira do site</p><p className="mt-1 font-semibold">{fmt(siteBalance)} vb$</p></div>
+    <div className="rounded-xl bg-white/5 p-3"><p className="text-xs text-neutral-400">Carteira Trend</p><p className="mt-1 font-semibold text-emerald-400">{fmt(trendBalance)} vb$</p></div>
+   </div>
+   <label className="mt-3 block text-sm text-neutral-300">Quantidade a converter<input type="number" min="0.01" step="0.01" max={siteBalance} value={convertAmount} onChange={e=>setConvertAmount(e.target.value)} placeholder="Ex.: 100" className="mt-1 w-full rounded-lg border border-white/15 bg-black p-3 text-white"/></label>
+   <Button className="mt-3 w-full" onClick={()=>void convertToTrend()} disabled={converting||!session}>{converting?"A converter...":"Converter para vb$ Trend"}</Button>
   </section>
   <section className="px-4 py-4">
    <label className="mt-4 block text-sm text-neutral-300">Quantidade de ativos<input type="number" min="0.0001" step="0.0001" value={quantity} onChange={e=>setQuantity(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-neutral-950 p-3 text-white"/></label>
