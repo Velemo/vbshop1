@@ -15,6 +15,7 @@ import Wishlist from "./pages/Wishlist";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
+import SiteMusicPlayer from "./components/SiteMusicPlayer";
 import Profile from "./pages/Profile";
 import Roleta from "./pages/Roleta";
 import Correio from "./pages/Correio";
@@ -57,6 +58,7 @@ const App = () => (
           <AuthProvider>
             <div className="h-dvh flex flex-col overflow-hidden bg-background">
             <VisitTracker />
+                <SiteMusicPlayer />
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <Routes>
               <Route path="/" element={<Index />} />
