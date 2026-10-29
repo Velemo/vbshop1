@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Music, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Site-wide music receiver. Browsers require a user gesture before audio can play. */
@@ -47,12 +46,12 @@ const SiteMusicPlayer = () => {
     }
   };
 
-  if (!url || !broadcastPlaying) return <audio ref={audioRef} preload="none" loop onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />;
-  return <>
-    <audio ref={audioRef} preload="none" loop onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
-    <button type="button" onClick={toggle} aria-label={playing ? "Desactivar música do site" : "Activar música do site"} title={name ? `Música do site: ${name}` : "Música do site"} className="fixed bottom-24 left-4 z-40 grid size-11 place-items-center rounded-full border border-border bg-background/95 text-foreground shadow-lg backdrop-blur">
-      {playing ? <Volume2 size={19}/> : <Music size={19}/>}
-    </button>
-  </>;
+  useEffect(() => {
+    const handleToggleRequest = () => toggle();
+    window.addEventListener("vbshop:toggle-site-music", handleToggleRequest);
+    return () => window.removeEventListener("vbshop:toggle-site-music", handleToggleRequest);
+  }, [url, broadcastPlaying, enabled, playing]);
+
+  return <audio ref={audioRef} preload="none" loop onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />;
 };
 export default SiteMusicPlayer;
