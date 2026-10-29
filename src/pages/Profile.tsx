@@ -13,6 +13,7 @@ const Profile = () => {
   const { balance, tickets, refresh } = useWallet();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [userCode, setUserCode] = useState<string | null>(null);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -21,9 +22,10 @@ const Profile = () => {
 
   useEffect(() => {
     if (!session) return;
-    (supabase as any).from("profiles").select("display_name,avatar_url").eq("user_id", session.user.id).maybeSingle()
+    (supabase as any).from("profiles").select("display_name,avatar_url,user_code").eq("user_id", session.user.id).maybeSingle()
       .then(({ data }: any) => {
         if (data?.display_name) setName(data.display_name);
+        if (data?.user_code) setUserCode(data.user_code);
         if (data?.avatar_url) setProfileAvatar(data.avatar_url);
       });
   }, [session?.user.id]);
@@ -94,6 +96,10 @@ const Profile = () => {
             </button>
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => { void uploadAvatar(e.target.files?.[0]); e.currentTarget.value = ""; }} />
             <div className="w-full max-w-sm">
+              <div className="mb-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-center">
+                <p className="text-xs text-muted-foreground">ID do utilizador</p>
+                <p className="font-mono text-base font-semibold tracking-wide">{userCode || "A gerar ID..."}</p>
+              </div>
               <label htmlFor="profile-name" className="mb-1 block text-sm font-medium">Nome</label>
               <div className="flex gap-2">
                 <input id="profile-name" value={name} onChange={e => setName(e.target.value)} maxLength={60} placeholder="O seu nome" className="min-w-0 flex-1 rounded-lg border border-border bg-background p-2 text-sm" />
