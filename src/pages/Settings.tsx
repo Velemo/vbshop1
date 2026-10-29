@@ -13,8 +13,8 @@ const options: { value: SiteMode; title: string; desc: string; icon: typeof Spar
 const Settings = () => {
   const { mode, setMode } = useSettings();
   const { isAdmin, session, signOut } = useAuth();
-  const { notificationsEnabled, setNotificationsEnabled, musicEnabled, setMusicEnabled, volume, setVolume, audioReady, enableAudio, testNotification, musicName, musicPlaying, toggleMusicPlayback } = useSound();
-  const navigate = useNavigate();
+  const { notificationsEnabled, setNotificationsEnabled, musicEnabled, setMusicEnabled, volume, setVolume, audioReady, enableAudio, playNotification } = useSound();
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,7 +67,7 @@ const Settings = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <button type="button" onClick={() => { enableAudio(); toast.success("Áudio activado neste dispositivo"); }} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"><Play size={16} />{audioReady ? "Reactivar áudio" : "Activar áudio"}</button>
-            <button type="button" onClick={testNotification} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold hover:bg-secondary"><Bell size={16} />Testar notificação</button>
+            <button type="button" onClick={() => { enableAudio(); playNotification(); }} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold hover:bg-secondary"><Bell size={16} />Testar notificação</button>
           </div>
           <p className="text-xs text-muted-foreground">Por segurança do navegador, o som só começa depois de tocar num controlo de áudio. Se o som estiver bloqueado pelo dispositivo, verifique também o volume do telemóvel.</p>
         </section>
