@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,17 +26,34 @@ import Trend from "./pages/Trend";
 const queryClient = new QueryClient();
 
 const VisitTracker = () => {
+  const location = useLocation();
+
   useEffect(() => {
-    if (sessionStorage.getItem("v_logged")) return;
-    sessionStorage.setItem("v_logged", "1");
-    supabase.auth.getUser().then(({ data }) => {
-      supabase.from("site_visits").insert({
+    // Regista cada página visitada uma vez por separador, incluindo navegação interna.
+    const visitKey = `v_logged:${location.pathname}`;
+    if (sessionStorage.getItem(visitKey)) return;
+    sessionStorage.setItem(visitKey, "1");
+
+    let cancelled = false;
+    const recordVisit = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const { error } = await supabase.from("site_visits").insert({
         user_id: data.user?.id ?? null,
-        path: window.location.pathname,
+        path: location.pathname,
         user_agent: navigator.userAgent.slice(0, 250),
       });
-    });
-  }, []);
+      if (error) {
+        // Permite diagnosticar falhas de permissões sem bloquear o site.
+        console.warn("Não foi possível registar a visita:", error.message);
+        sessionStorage.removeItem(visitKey);
+      }
+    };
+
+    void recordVisit();
+    return () => { cancelled = true; };
+  }, [location.pathname]);
+
   return null;
 };
 

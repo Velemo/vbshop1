@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon, Music, Play, Pause } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon, Music, Play, Pause, RefreshCw } from "lucide-react";
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
@@ -171,6 +171,11 @@ const Admin = () => {
       supabase.from("site_visits").select("*", { count: "exact", head: true }).gte("created_at", d7),
       supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(50),
     ]);
+    const failed = [total, last24, last7, recent].find((result: any) => result.error);
+    if (failed?.error) {
+      toast.error("Não foi possível carregar as visitas: " + failed.error.message);
+      return;
+    }
     setStats({
       total: total.count || 0,
       last24: last24.count || 0,
@@ -493,16 +498,24 @@ const Admin = () => {
               ))}
             </div>
             <div>
-              <p className="text-sm font-semibold mb-2">Últimas visitas</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">Últimas visitas</p>
+                <Button type="button" size="sm" variant="outline" onClick={() => void loadVisits()}><RefreshCw size={14} className="mr-1.5"/>Atualizar</Button>
+              </div>
+              <p className="mb-2 text-xs text-muted-foreground">Registos de páginas visitadas neste site. Utilizadores identificados aparecem pelo ID da conta; visitantes sem sessão aparecem como anónimos.</p>
               <div className="space-y-1.5">
-                {recentVisits.map((v, i) => (
-                  <div key={i} className="bg-card border border-border rounded-lg p-2.5 text-xs flex items-center gap-2">
-                    <Eye size={12} className="text-muted-foreground shrink-0"/>
-                    <span className="text-muted-foreground shrink-0">{new Date(v.created_at).toLocaleString("pt-MZ")}</span>
-                    <span className="font-mono truncate">{v.path}</span>
-                    <span className="text-muted-foreground truncate ml-auto hidden sm:inline">{v.user_id ? "user" : "anon"}</span>
+                {recentVisits.length ? recentVisits.map((v, i) => (
+                  <div key={v.id || `${v.created_at}-${i}`} className="bg-card border border-border rounded-lg p-3 text-xs space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Eye size={13} className="text-muted-foreground shrink-0"/>
+                      <span className="text-muted-foreground">{v.created_at ? new Date(v.created_at).toLocaleString("pt-MZ") : "Data indisponível"}</span>
+                      <span className="ml-auto rounded bg-secondary px-1.5 py-0.5">{v.user_id ? "Utilizador" : "Anónimo"}</span>
+                    </div>
+                    <p className="font-mono break-all">Página: {v.path || "—"}</p>
+                    {v.user_id && <p className="break-all text-muted-foreground">ID da conta: {v.user_id}</p>}
+                    {v.user_agent && <p className="break-words text-muted-foreground">Dispositivo/navegador: {v.user_agent}</p>}
                   </div>
-                ))}
+                )) : <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">Ainda não há visitas registadas ou não foi possível carregar registos.</p>}
               </div>
             </div>
           </div>
