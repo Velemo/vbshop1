@@ -754,14 +754,15 @@ const Admin = () => {
             </label>
             <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <label className="flex items-start gap-3 text-sm font-semibold">
-                <input type="checkbox" className="mt-1 size-4 accent-primary" />
+                <input type="checkbox" defaultChecked className="mt-1 size-4 accent-primary" />
                 <span>Pergunta obrigatória antes do pagamento
-                  <span className="mt-1 block text-xs font-normal text-muted-foreground">Ative para mostrar uma pergunta ao cliente antes de pagar com vb$.</span>
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">Opção activada no painel: o cliente deverá responder antes de pagar com vb$ quando esta configuração for ligada ao fluxo de compra.</span>
                 </span>
               </label>
               <label className="block space-y-1 text-xs font-medium">Pergunta para o cliente
-                <textarea rows={3} maxLength={500} placeholder="Escreva aqui a pergunta que o cliente deverá responder..." className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-normal" />
+                <textarea rows={3} maxLength={500} defaultValue="Qual é o motivo da sua compra? Por favor, explique brevemente." placeholder="Escreva aqui a pergunta que o cliente deverá responder..." className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-normal" />
               </label>
+              <p className="text-xs text-muted-foreground">Nota: esta configuração visual ainda precisa de ser ligada à base de dados e ao checkout no Lovable para ser aplicada aos clientes.</p>
             </section>
             {[
               { k: "name", label: "Nome", placeholder: "Nome do produto" },
