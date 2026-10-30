@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText } from "lucide-react";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText, Download, Smartphone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -178,6 +178,20 @@ const Profile = () => {
             <p className="mt-2 text-sm text-muted-foreground">Ativação por 10 vb$. Benefício previsto: até 30% de desconto em quase todos os produtos. Outros privilégios chegam em breve.</p>
             {!isVip && <Button className="mt-3 w-full" onClick={activateVip} disabled={vipLoading}>{vipLoading ? "A ativar..." : "Ativar Zona VIP — 10 vb$"}</Button>}
           </section>}
+          <section className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-center gap-3">
+              <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Smartphone size={23} /></div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-semibold">Aplicação vb_SHOP</h2>
+                <p className="text-xs text-muted-foreground">Versão Android (APK)</p>
+              </div>
+              <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">Em preparação</span>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">Estamos a preparar a aplicação para Android. O ficheiro de instalação ainda não está disponível.</p>
+            <Button type="button" disabled className="mt-3 w-full gap-2" aria-label="Download APK ainda indisponível">
+              <Download size={17} /> APK ainda não disponível
+            </Button>
+          </section>
           <Link to="/settings" className="mt-3 flex items-center gap-3 border-t border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
         </div>
       )}
