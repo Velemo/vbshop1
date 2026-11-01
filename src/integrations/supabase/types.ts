@@ -504,6 +504,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_music_broadcast: {
+        Row: {
+          id: number
+          is_playing: boolean
+          music_name: string | null
+          music_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          is_playing?: boolean
+          music_name?: string | null
+          music_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          is_playing?: boolean
+          music_name?: string | null
+          music_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_visits: {
         Row: {
           created_at: string
@@ -543,6 +567,30 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vb_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          recipient_user_id: string
+          sender_user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          recipient_user_id: string
+          sender_user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          recipient_user_id?: string
+          sender_user_id?: string
         }
         Relationships: []
       }
@@ -629,6 +677,10 @@ export type Database = {
         Returns: boolean
       }
       redeem_code: { Args: { _code: string }; Returns: number }
+      send_vb_by_user_code: {
+        Args: { p_amount: number; p_recipient_code: string }
+        Returns: Json
+      }
       spin_roulette: { Args: never; Returns: number }
     }
     Enums: {
