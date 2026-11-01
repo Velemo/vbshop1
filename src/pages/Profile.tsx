@@ -8,7 +8,7 @@ import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
 
 const Profile = () => {
-  const { session, isAdmin, signOut } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
   const { balance, tickets, refresh } = useWallet();
   const [code, setCode] = useState("");
