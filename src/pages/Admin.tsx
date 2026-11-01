@@ -67,9 +67,13 @@ const Admin = () => {
   const [confirmStatus, setConfirmStatus] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const historyRequest = useRef(0);
+  const historyPanelRef = useRef<HTMLDivElement | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [userHistory, setUserHistory] = useState<UserHistory[]>([]);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
+  useEffect(() => {
+    if (selectedUser) historyPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedUser?.user_id]);
   const [editing, setEditing] = useState<ProductForm | null>(null);
   const [stats, setStats] = useState({ total: 0, last24: 0, last7: 0, unique: 0 });
   const [recentVisits, setRecentVisits] = useState<any[]>([]);
@@ -518,7 +522,7 @@ const Admin = () => {
                   </div>
                 </Button>
                 {selectedUser?.user_id === user.user_id && (
-              <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
+              <div ref={historyPanelRef} className="scroll-mt-4 rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold">{selectedUser.display_name || "Sem nome"}</h3><p className="text-xs text-muted-foreground break-all">{selectedUser.user_code} · {selectedUser.email}</p><p className="mt-1 font-semibold">{Number(selectedUser.balance).toFixed(2)} vb$ · {selectedUser.is_banned ? "Banida" : "Ativa"}</p></div><Button variant="outline" size="sm" disabled={statusBusy} onClick={() => { ++historyRequest.current; setSelectedUser(null); setUserHistory([]); }}>Fechar</Button></div>
                 <div className="flex flex-wrap gap-2 items-center justify-between">
                   <div className="w-48"><Select value={historyFilter} onValueChange={setHistoryFilter}><SelectTrigger aria-label="Filtrar movimentos"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os movimentos</SelectItem><SelectItem value="deposits">Depósitos</SelectItem></SelectContent></Select></div>
