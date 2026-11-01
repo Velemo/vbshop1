@@ -8,6 +8,13 @@
       "when": 1793499346657,
       "tag": "0000_activate_admin_user_management",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793499590820,
+      "tag": "0001_fix_admin_history_ordering",
+      "breakpoints": true
     }
   ]
 }
