@@ -1,4 +1,5 @@
 # Current tasks
+- [ ] Activate ADM account list, public IDs, search/sort, financial history and real ban/unban with existing Cloud data.
 - [ ] Google-only sign-in for existing and new Google accounts with existing profiles.
 - [ ] Allow vb$ product purchases at 85 MZN per vb$ with atomic, unique ordered delivery to Correio.
 - [ ] Let ADM add multiple private text/link/media deliveries per product and see depleted inventory.
