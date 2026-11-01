@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq("role", "admin")
       .maybeSingle();
     setIsAdmin(!!data);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -41,14 +42,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) setTimeout(() => checkAdmin(s.user.id), 0);
-      else setIsAdmin(false);
-      setLoading(false);
+      else { setIsAdmin(false); setLoading(false); }
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) checkAdmin(session.user.id);
-      setLoading(false);
+      else { setIsAdmin(false); setLoading(false); }
     });
     return () => subscription.unsubscribe();
   }, []);

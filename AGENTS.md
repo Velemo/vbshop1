@@ -1,4 +1,5 @@
 # Project architecture
+- Read ADM user directory/history through admin-only RPCs over existing tables; change bans through the authenticated admin edge function and enforce auth bans in the Data API pre-request hook so existing JWTs cannot spend funds.
 
 - Keep the shared bottom navigation in `BottomNav` at the router level so shop, roulette, Correio, profile, and product pages expose consistent destinations.
 - Roulette prizes, vb$ wallet, ticket purchase and code redemption run through security-definer RPCs (spin_roulette, buy_tickets, redeem_code) so balances and winners are decided server-side, never by the client.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon, Music, Play, Pause, RefreshCw } from "lucide-react";
@@ -7,9 +7,12 @@ import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
 import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { filterAndSortUsers, type AdminUser, type UserSort } from "@/lib/admin-users";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
 type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes";
-type AdminUser = { user_id: string; email: string | null; account_created_at: string; user_code: string | null; display_name: string | null; avatar_url: string | null; balance: number; tickets: number };
 type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
@@ -51,10 +54,19 @@ type ProductForm = {
 const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, deliveries: [] };
 
 const Admin = () => {
+  const { user: currentUser } = useAuth();
   const [tab, setTab] = useState<Tab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [userSearch, setUserSearch] = useState("");
+  const [userSort, setUserSort] = useState<UserSort>("newest");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState("");
+  const [historyError, setHistoryError] = useState("");
+  const [historyFilter, setHistoryFilter] = useState("all");
+  const [confirmStatus, setConfirmStatus] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const historyRequest = useRef(0);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [userHistory, setUserHistory] = useState<UserHistory[]>([]);
   const [loadingUserHistory, setLoadingUserHistory] = useState(false);
@@ -147,18 +159,51 @@ const Admin = () => {
   };
 
   const loadAdminUsers = async () => {
+    setLoadingUsers(true);
+    setUsersError("");
     const { data, error } = await (supabase as any).rpc("admin_list_users");
-    if (error) { toast.error("Não foi possível carregar os utilizadores: " + error.message); return; }
+    setLoadingUsers(false);
+    if (error) { setUsersError("Não foi possível carregar os utilizadores. Tenta novamente."); toast.error("Não foi possível carregar os utilizadores: " + error.message); return; }
     setAdminUsers((data || []) as AdminUser[]);
+    setSelectedUser(previous => previous ? ((data || []) as AdminUser[]).find(u => u.user_id === previous.user_id) || null : null);
   };
 
   const openUserHistory = async (user: AdminUser) => {
+    const request = ++historyRequest.current;
     setSelectedUser(user);
+    setUserHistory([]);
+    setHistoryError("");
+    setHistoryFilter("all");
     setLoadingUserHistory(true);
     const { data, error } = await (supabase as any).rpc("admin_user_history", { _user_id: user.user_id });
+    if (request !== historyRequest.current) return;
     setLoadingUserHistory(false);
-    if (error) { toast.error("Não foi possível carregar o histórico: " + error.message); setUserHistory([]); return; }
+    if (error) { setHistoryError("Não foi possível carregar os movimentos. Tenta novamente."); toast.error("Não foi possível carregar o histórico: " + error.message); return; }
     setUserHistory((data || []) as UserHistory[]);
+  };
+
+  const changeUserStatus = async () => {
+    if (!selectedUser || statusBusy) return;
+    setStatusBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-status", { body: { user_id: selectedUser.user_id, banned: !selectedUser.is_banned } });
+      if (error || !data?.success) {
+        let message = data?.error || "Não foi possível alterar o estado da conta.";
+        if (error && "context" in error && error.context instanceof Response) {
+          const details = await error.context.json().catch(() => null);
+          message = details?.error || message;
+        }
+        toast.error(message);
+        return;
+      }
+      const updated = { ...selectedUser, is_banned: data.is_banned };
+      setSelectedUser(updated);
+      setAdminUsers(previous => previous.map(u => u.user_id === updated.user_id ? updated : u));
+      setConfirmStatus(false);
+      toast.success(updated.is_banned ? "Conta banida" : "Conta desbloqueada");
+      await loadAdminUsers();
+    } catch { toast.error("Não foi possível alterar o estado da conta. Tenta novamente."); }
+    finally { setStatusBusy(false); }
   };
 
   const loadVisits = async () => {
@@ -454,34 +499,44 @@ const Admin = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="rounded-xl border border-border bg-card p-3"><p className="text-xs text-muted-foreground">Total de contas</p><p className="text-2xl font-bold">{adminUsers.length}</p></div>
               <div className="rounded-xl border border-border bg-card p-3"><p className="text-xs text-muted-foreground">Saldo total vb$</p><p className="text-2xl font-bold">{adminUsers.reduce((sum, u) => sum + Number(u.balance || 0), 0).toLocaleString("pt-MZ")}</p></div>
-              <div className="rounded-xl border border-border bg-card p-3 col-span-2 sm:col-span-1"><p className="text-xs text-muted-foreground">Contas ordenadas</p><p className="text-sm font-semibold">Novas primeiro</p></div>
+              <div className="rounded-xl border border-border bg-card p-3 col-span-2 sm:col-span-1"><p className="text-xs text-muted-foreground">Contas banidas</p><p className="text-2xl font-bold">{adminUsers.filter(u => u.is_banned).length}</p></div>
             </div>
-            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Pesquisar por ID, nome, email ou UUID..." className="w-full rounded-lg border border-border bg-background p-3 text-sm" />
+            <div className="flex flex-wrap items-center gap-2">
+              <input aria-label="Pesquisar utilizadores" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Pesquisar por nome, email ou ID..." className="min-w-0 flex-1 basis-60 rounded-lg border border-border bg-background p-3 text-sm" />
+              <div className="w-48"><Select value={userSort} onValueChange={value => setUserSort(value as UserSort)}><SelectTrigger aria-label="Ordenar utilizadores"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="newest">Novas primeiro</SelectItem><SelectItem value="name-asc">Nome A–Z</SelectItem><SelectItem value="name-desc">Nome Z–A</SelectItem><SelectItem value="balance-desc">Maior saldo</SelectItem><SelectItem value="balance-asc">Menor saldo</SelectItem></SelectContent></Select></div>
+              <Button variant="outline" size="icon" title="Atualizar utilizadores" aria-label="Atualizar utilizadores" disabled={loadingUsers} onClick={() => void loadAdminUsers()}><RefreshCw size={16} className={loadingUsers ? "animate-spin" : ""}/></Button>
+            </div>
             <div className="space-y-2">
-              {adminUsers.filter(u => [u.user_code, u.display_name, u.email, u.user_id].some(v => (v || "").toLowerCase().includes(userSearch.toLowerCase()))).map(user => (
-                <button key={user.user_id} onClick={() => void openUserHistory(user)} className={`w-full rounded-xl border p-3 text-left ${selectedUser?.user_id === user.user_id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
-                  <div className="flex items-start gap-3">
+              {filterAndSortUsers(adminUsers, userSearch, userSort).map(user => (
+                <Button variant="ghost" key={user.user_id} onClick={() => void openUserHistory(user)} className={`h-auto w-full whitespace-normal rounded-xl border p-3 text-left font-normal ${selectedUser?.user_id === user.user_id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <div className="flex w-full items-start gap-3">
                     <div className="size-12 shrink-0 overflow-hidden rounded-full border border-border bg-secondary grid place-items-center">
                       {user.avatar_url ? <img src={user.avatar_url} alt={`Foto de ${user.display_name || "utilizador"}`} className="size-full object-cover" /> : <span className="text-sm font-semibold text-muted-foreground">{(user.display_name || user.user_code || "?").slice(0, 1).toUpperCase()}</span>}
                     </div>
-                    <div className="min-w-0 flex-1"><p className="font-semibold truncate">{user.display_name || "Sem nome"}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1">ID público: {user.user_code || "Pendente"}</p><p className="font-mono text-[10px] text-muted-foreground mt-1 break-all">UUID: {user.user_id}</p></div>
-                    <div className="shrink-0 text-right"><p className="font-semibold">{Number(user.balance || 0).toLocaleString("pt-MZ")} vb$</p><p className="text-xs text-muted-foreground">{user.tickets} bilhete(s)</p><p className="text-[11px] text-muted-foreground mt-1">{new Date(user.account_created_at).toLocaleDateString("pt-MZ")}</p></div>
+                    <div className="min-w-0 flex-1"><p className="font-semibold truncate">{user.display_name || "Sem nome"}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1 break-all">ID: {user.user_code || "Pendente"}</p><p className={`text-xs mt-1 ${user.is_banned ? "text-destructive" : "text-muted-foreground"}`}>{user.is_banned ? "Banida" : "Ativa"}</p></div>
+                    <div className="min-w-0 max-w-[40%] text-right"><p className="font-semibold break-words">{Number(user.balance || 0).toLocaleString("pt-MZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} vb$</p><p className="text-xs text-muted-foreground">{user.tickets} bilhete(s)</p><p className="text-[11px] text-muted-foreground mt-1">{new Date(user.account_created_at).toLocaleDateString("pt-MZ")}</p></div>
                   </div>
-                </button>
+                </Button>
               ))}
-              {!adminUsers.length && <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Nenhum utilizador carregado. Confirma se a migração SQL foi aplicada no Lovable Cloud.</p>}
+              {usersError ? <p role="alert" className="text-sm text-destructive">{usersError}</p> : loadingUsers && !adminUsers.length ? <p className="text-sm text-muted-foreground">A carregar utilizadores...</p> : !filterAndSortUsers(adminUsers, userSearch, userSort).length && <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{adminUsers.length ? "Nenhuma conta corresponde à pesquisa." : "Ainda não há contas."}</p>}
             </div>
             {selectedUser && (
               <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">Histórico do utilizador</h3><p className="text-xs text-muted-foreground">{selectedUser.user_code} · {selectedUser.email}</p></div><Button variant="outline" size="sm" onClick={() => { setSelectedUser(null); setUserHistory([]); }}>Fechar</Button></div>
-                {loadingUserHistory ? <p className="text-sm text-muted-foreground">A carregar histórico...</p> : userHistory.length ? userHistory.map((event, i) => (
+                <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold">{selectedUser.display_name || "Sem nome"}</h3><p className="text-xs text-muted-foreground break-all">{selectedUser.user_code} · {selectedUser.email}</p><p className="mt-1 font-semibold">{Number(selectedUser.balance).toFixed(2)} vb$ · {selectedUser.is_banned ? "Banida" : "Ativa"}</p></div><Button variant="outline" size="sm" disabled={statusBusy} onClick={() => { ++historyRequest.current; setSelectedUser(null); setUserHistory([]); }}>Fechar</Button></div>
+                <div className="flex flex-wrap gap-2 items-center justify-between">
+                  <div className="w-48"><Select value={historyFilter} onValueChange={setHistoryFilter}><SelectTrigger aria-label="Filtrar movimentos"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os movimentos</SelectItem><SelectItem value="deposits">Depósitos</SelectItem></SelectContent></Select></div>
+                  <Button variant={selectedUser.is_banned ? "outline" : "destructive"} size="sm" disabled={selectedUser.user_id === currentUser?.id || statusBusy} onClick={() => setConfirmStatus(true)}>{selectedUser.is_banned ? "Desbloquear" : "Banir conta"}</Button>
+                </div>
+                <h3 className="font-semibold">Movimentos financeiros</h3>
+                {historyError ? <div role="alert" className="text-sm text-destructive">{historyError}<Button variant="outline" size="sm" className="ml-2" onClick={() => void openUserHistory(selectedUser)}>Tentar novamente</Button></div> : loadingUserHistory ? <p className="text-sm text-muted-foreground">A carregar histórico...</p> : userHistory.filter(event => historyFilter === "all" || event.event_type === "Depósito").length ? userHistory.filter(event => historyFilter === "all" || event.event_type === "Depósito").map((event, i) => (
                   <div key={i} className="border-t border-border pt-2 flex items-start justify-between gap-3">
                     <div className="min-w-0"><p className="text-sm font-medium">{event.event_type}</p><p className="text-xs text-muted-foreground break-words">{event.description}</p><p className="text-[11px] text-muted-foreground">{new Date(event.event_at).toLocaleString("pt-MZ")}</p></div>
                     {event.amount !== null && <p className={`shrink-0 text-sm font-semibold ${Number(event.amount) < 0 ? "text-destructive" : "text-primary"}`}>{Number(event.amount) > 0 ? "+" : ""}{Number(event.amount).toLocaleString("pt-MZ")} vb$</p>}
                   </div>
-                )) : <p className="text-sm text-muted-foreground">Ainda não há eventos registados para este utilizador.</p>}
+                )) : <p className="text-sm text-muted-foreground">{historyFilter === "deposits" ? "Ainda não há depósitos registados." : "Ainda não há movimentos registados para este utilizador."}</p>}
               </div>
             )}
+            <AlertDialog open={confirmStatus} onOpenChange={open => { if (!statusBusy) setConfirmStatus(open); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{selectedUser?.is_banned ? "Desbloquear conta?" : "Banir conta?"}</AlertDialogTitle><AlertDialogDescription>{selectedUser?.user_code}: {selectedUser?.is_banned ? "O utilizador poderá voltar a iniciar sessão e usar a conta." : "O utilizador deixará de poder iniciar sessão e realizar operações. Os dados e o saldo serão preservados."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={statusBusy}>Cancelar</AlertDialogCancel><Button variant={selectedUser?.is_banned ? "default" : "destructive"} disabled={statusBusy} onClick={() => void changeUserStatus()}>{statusBusy ? "A guardar..." : "Confirmar"}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
           </section>
         )}
 

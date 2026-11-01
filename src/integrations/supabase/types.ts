@@ -504,6 +504,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_music_broadcast: {
+        Row: {
+          id: number
+          is_playing: boolean
+          music_name: string | null
+          music_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          is_playing?: boolean
+          music_name?: string | null
+          music_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          is_playing?: boolean
+          music_name?: string | null
+          music_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_visits: {
         Row: {
           created_at: string
@@ -543,6 +567,30 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vb_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          recipient_user_id: string
+          sender_user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          recipient_user_id: string
+          sender_user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          recipient_user_id?: string
+          sender_user_id?: string
         }
         Relationships: []
       }
@@ -604,11 +652,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_users: {
+        Args: never
+        Returns: {
+          account_created_at: string
+          avatar_url: string
+          balance: number
+          display_name: string
+          email: string
+          is_banned: boolean
+          tickets: number
+          user_code: string
+          user_id: string
+        }[]
+      }
+      admin_user_history: {
+        Args: { _user_id: string }
+        Returns: {
+          amount: number
+          description: string
+          event_at: string
+          event_type: string
+        }[]
+      }
       buy_product_vb: {
         Args: { _code?: string; _product_id: string }
         Returns: number
       }
       buy_tickets: { Args: { _qty: number }; Returns: undefined }
+      check_account_access: { Args: never; Returns: undefined }
       check_discount: {
         Args: { _code: string; _product_id: string }
         Returns: number
@@ -629,6 +701,10 @@ export type Database = {
         Returns: boolean
       }
       redeem_code: { Args: { _code: string }; Returns: number }
+      send_vb_by_user_code: {
+        Args: { p_amount: number; p_recipient_code: string }
+        Returns: Json
+      }
       spin_roulette: { Args: never; Returns: number }
     }
     Enums: {
