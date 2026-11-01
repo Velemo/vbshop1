@@ -167,7 +167,7 @@ const Profile = () => {
               <Music size={28} strokeWidth={1.8} />
               <span className="leading-tight">Música</span>
             </button>
-            {isAdmin && <Link to="/pedidos" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-1 py-4 text-center text-xs font-semibold text-primary hover:bg-primary/10 sm:text-sm">
+            {<Link to="/pedidos" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-1 py-4 text-center text-xs font-semibold text-primary hover:bg-primary/10 sm:text-sm">
               <MessageSquareText size={28} strokeWidth={1.8} />
               <span className="leading-tight">Pedidos</span>
               
