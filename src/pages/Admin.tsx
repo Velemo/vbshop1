@@ -297,8 +297,7 @@ const Admin = () => {
     const body = Array.from(rnd, n => chars[n % chars.length]).join("").replace(/(.{4})(?=.)/g, "$1-");
     let code: string; let error: any;
     if (codeKind === "recharge") {
-      const amount = Number(codeAmount);
-      if (!(amount > 0) || amount > 100000) { toast.error("Valor inválido"); return; }
+      const amount = Number(codeAmount);      if (!(amount > 0) || amount > 100000) { toast.error("Valor inválido"); return; }
       code = "VB-" + body;
       ({ error } = await (supabase as any).from("recharge_codes").insert({ code, amount, expires_at }));
     } else {
@@ -508,7 +507,8 @@ const Admin = () => {
             </div>
             <div className="space-y-2">
               {filterAndSortUsers(adminUsers, userSearch, userSort).map(user => (
-                <Button variant="ghost" key={user.user_id} onClick={() => void openUserHistory(user)} className={`h-auto w-full whitespace-normal rounded-xl border p-3 text-left font-normal ${selectedUser?.user_id === user.user_id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                <div key={user.user_id} className="space-y-2">
+                <Button variant="ghost" onClick={() => void openUserHistory(user)} className={`h-auto w-full whitespace-normal rounded-xl border p-3 text-left font-normal ${selectedUser?.user_id === user.user_id ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
                   <div className="flex w-full items-start gap-3">
                     <div className="size-12 shrink-0 overflow-hidden rounded-full border border-border bg-secondary grid place-items-center">
                       {user.avatar_url ? <img src={user.avatar_url} alt={`Foto de ${user.display_name || "utilizador"}`} className="size-full object-cover" /> : <span className="text-sm font-semibold text-muted-foreground">{(user.display_name || user.user_code || "?").slice(0, 1).toUpperCase()}</span>}
@@ -517,10 +517,7 @@ const Admin = () => {
                     <div className="min-w-0 max-w-[40%] text-right"><p className="font-semibold break-words">{Number(user.balance || 0).toLocaleString("pt-MZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} vb$</p><p className="text-xs text-muted-foreground">{user.tickets} bilhete(s)</p><p className="text-[11px] text-muted-foreground mt-1">{new Date(user.account_created_at).toLocaleDateString("pt-MZ")}</p></div>
                   </div>
                 </Button>
-              ))}
-              {usersError ? <p role="alert" className="text-sm text-destructive">{usersError}</p> : loadingUsers && !adminUsers.length ? <p className="text-sm text-muted-foreground">A carregar utilizadores...</p> : !filterAndSortUsers(adminUsers, userSearch, userSort).length && <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{adminUsers.length ? "Nenhuma conta corresponde à pesquisa." : "Ainda não há contas."}</p>}
-            </div>
-            {selectedUser && (
+                {selectedUser?.user_id === user.user_id && (
               <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="font-semibold">{selectedUser.display_name || "Sem nome"}</h3><p className="text-xs text-muted-foreground break-all">{selectedUser.user_code} · {selectedUser.email}</p><p className="mt-1 font-semibold">{Number(selectedUser.balance).toFixed(2)} vb$ · {selectedUser.is_banned ? "Banida" : "Ativa"}</p></div><Button variant="outline" size="sm" disabled={statusBusy} onClick={() => { ++historyRequest.current; setSelectedUser(null); setUserHistory([]); }}>Fechar</Button></div>
                 <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -536,6 +533,10 @@ const Admin = () => {
                 )) : <p className="text-sm text-muted-foreground">{historyFilter === "deposits" ? "Ainda não há depósitos registados." : "Ainda não há movimentos registados para este utilizador."}</p>}
               </div>
             )}
+              </div>
+              ))}
+              {usersError ? <p role="alert" className="text-sm text-destructive">{usersError}</p> : loadingUsers && !adminUsers.length ? <p className="text-sm text-muted-foreground">A carregar utilizadores...</p> : !filterAndSortUsers(adminUsers, userSearch, userSort).length && <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{adminUsers.length ? "Nenhuma conta corresponde à pesquisa." : "Ainda não há contas."}</p>}
+            </div>
             <AlertDialog open={confirmStatus} onOpenChange={open => { if (!statusBusy) setConfirmStatus(open); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{selectedUser?.is_banned ? "Desbloquear conta?" : "Banir conta?"}</AlertDialogTitle><AlertDialogDescription>{selectedUser?.user_code}: {selectedUser?.is_banned ? "O utilizador poderá voltar a iniciar sessão e usar a conta." : "O utilizador deixará de poder iniciar sessão e realizar operações. Os dados e o saldo serão preservados."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={statusBusy}>Cancelar</AlertDialogCancel><Button variant={selectedUser?.is_banned ? "default" : "destructive"} disabled={statusBusy} onClick={() => void changeUserStatus()}>{statusBusy ? "A guardar..." : "Confirmar"}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>
           </section>
         )}
@@ -597,8 +598,7 @@ const Admin = () => {
             {[
               { k: "title", label: "Título (opcional)" },
               { k: "subtitle", label: "Subtítulo (opcional)" },
-              { k: "button_label", label: "Nome do botão (ex: Ver mais)" },
-              { k: "button_url", label: "Link do botão (https://...)" },
+              { k: "button_label", label: "Nome do botão (ex: Ver mais)" },              { k: "button_url", label: "Link do botão (https://...)" },
             ].map(f => (
               <div key={f.k} className="space-y-1">
                 <label className="text-xs font-medium">{f.label}</label>
