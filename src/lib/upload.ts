@@ -12,13 +12,14 @@ export async function uploadWithProgress(
   bucket: string,
   file: File,
   onProgress: (percent: number) => void,
+  folder = "",
 ): Promise<UploadResult> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
   if (!token) return { url: null, error: "Precisa iniciar sessão para enviar ficheiros." };
 
   const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-  const path = `${crypto.randomUUID()}.${ext}`;
+  const path = folder ? `${folder.replace(/^\/+|\/+$/g, "")}/${crypto.randomUUID()}.${ext}` : `${crypto.randomUUID()}.${ext}`;
 
   const errorMessage = await new Promise<string | null>((resolve) => {
     const xhr = new XMLHttpRequest();
