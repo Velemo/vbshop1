@@ -263,7 +263,7 @@ export default function P2P() {
         </div>
       ) : null}
 
-      <div className="fixed bottom-6 right-5 z-40 flex flex-col items-end gap-2">
+      <div className="fixed bottom-36 right-5 z-40 flex flex-col items-end gap-2">
         {showP2PInfo && (
           <div className="w-[min( calc(100vw-2.5rem),22rem)] rounded-2xl border border-border bg-card p-4 text-sm shadow-xl">
             <div className="mb-2 flex items-center justify-between gap-3">
