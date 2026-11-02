@@ -198,7 +198,6 @@ export default function P2P() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [myOffers, setMyOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showP2PInfo, setShowP2PInfo] = useState(false);
   const [isVip, setIsVip] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [buying, setBuying] = useState<Offer | null>(null);
@@ -262,26 +261,6 @@ export default function P2P() {
           )}
         </div>
       ) : null}
-
-      <div className="fixed bottom-[120px] right-5 z-40 flex flex-col items-end gap-2">
-        {showP2PInfo && (
-          <div className="w-[min( calc(100vw-2.5rem),22rem)] rounded-2xl border border-border bg-card p-4 text-sm shadow-xl">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <h2 className="font-semibold">P2P · Comprar e vender vb$</h2>
-              <button type="button" onClick={() => setShowP2PInfo(false)} aria-label="Fechar informações" className="rounded-full p-1 hover:bg-muted"><X size={16} /></button>
-            </div>
-            <p className="text-muted-foreground">Compre vb$ de vendedores da comunidade por M-Pesa ou e-Mola. O pagamento é verificado entre as partes antes de os vb$ serem libertados.</p>
-            <div className="mt-4 border-t border-border pt-3">
-              <p className="font-semibold">Quer vender vb$?</p>
-              <p className="mt-1 text-muted-foreground">A criação de ofertas é exclusiva para membros VIP. Ative a Zona VIP no seu perfil para vender.</p>
-              <Button asChild variant="outline" size="sm" className="mt-2"><Link to="/perfil">Ativar VIP no perfil</Link></Button>
-            </div>
-          </div>
-        )}
-        <button type="button" onClick={() => setShowP2PInfo(value => !value)} aria-label="Mais informações sobre P2P" aria-expanded={showP2PInfo} className="grid size-10 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-lg transition-colors hover:bg-muted hover:text-foreground">
-          <Info size={19} />
-        </button>
-      </div>
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold">Ofertas disponíveis</h2>
