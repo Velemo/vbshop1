@@ -83,6 +83,110 @@ export type Database = {
         }
         Relationships: []
       }
+      p2p_offers: {
+        Row: {
+          amount_vb: number
+          created_at: string
+          emola_number: string | null
+          id: string
+          mpesa_number: string | null
+          price_per_vb: number
+          reserved_vb: number
+          seller_id: string
+          seller_name: string
+          sold_vb: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_vb: number
+          created_at?: string
+          emola_number?: string | null
+          id?: string
+          mpesa_number?: string | null
+          price_per_vb: number
+          reserved_vb?: number
+          seller_id: string
+          seller_name?: string
+          sold_vb?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_vb?: number
+          created_at?: string
+          emola_number?: string | null
+          id?: string
+          mpesa_number?: string | null
+          price_per_vb?: number
+          reserved_vb?: number
+          seller_id?: string
+          seller_name?: string
+          sold_vb?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      p2p_orders: {
+        Row: {
+          amount_vb: number
+          buyer_id: string
+          buyer_name: string
+          created_at: string
+          dispute_reason: string | null
+          id: string
+          offer_id: string
+          price_per_vb: number
+          receipt_image_url: string | null
+          receipt_note: string | null
+          seller_id: string
+          status: string
+          total_mt: number
+          updated_at: string
+        }
+        Insert: {
+          amount_vb: number
+          buyer_id: string
+          buyer_name?: string
+          created_at?: string
+          dispute_reason?: string | null
+          id?: string
+          offer_id: string
+          price_per_vb: number
+          receipt_image_url?: string | null
+          receipt_note?: string | null
+          seller_id: string
+          status?: string
+          total_mt: number
+          updated_at?: string
+        }
+        Update: {
+          amount_vb?: number
+          buyer_id?: string
+          buyer_name?: string
+          created_at?: string
+          dispute_reason?: string | null
+          id?: string
+          offer_id?: string
+          price_per_vb?: number
+          receipt_image_url?: string | null
+          receipt_note?: string | null
+          seller_id?: string
+          status?: string
+          total_mt?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p2p_orders_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "p2p_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prize_mail: {
         Row: {
           created_at: string
@@ -594,6 +698,24 @@ export type Database = {
         }
         Relationships: []
       }
+      vip_memberships: {
+        Row: {
+          activated_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallets: {
         Row: {
           balance: number
@@ -652,6 +774,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_vip: { Args: never; Returns: undefined }
       admin_list_users: {
         Args: never
         Returns: {
@@ -699,6 +822,36 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_vip: { Args: { _user_id: string }; Returns: boolean }
+      p2p_cancel_offer: { Args: { _offer_id: string }; Returns: number }
+      p2p_cancel_order: { Args: { _order_id: string }; Returns: undefined }
+      p2p_confirm_order: { Args: { _order_id: string }; Returns: undefined }
+      p2p_create_offer: {
+        Args: {
+          _amount_vb: number
+          _emola_number: string
+          _mpesa_number: string
+          _price_per_vb: number
+        }
+        Returns: string
+      }
+      p2p_create_order: {
+        Args: { _amount_vb: number; _offer_id: string }
+        Returns: string
+      }
+      p2p_reject_order: { Args: { _order_id: string }; Returns: undefined }
+      p2p_report_dispute: {
+        Args: { _order_id: string; _reason: string }
+        Returns: undefined
+      }
+      p2p_resolve_dispute: {
+        Args: { _order_id: string; _release: boolean }
+        Returns: undefined
+      }
+      p2p_submit_receipt: {
+        Args: { _image_url: string; _note: string; _order_id: string }
+        Returns: undefined
       }
       redeem_code: { Args: { _code: string }; Returns: number }
       send_vb_by_user_code: {

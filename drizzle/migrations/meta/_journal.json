@@ -15,6 +15,13 @@
       "when": 1793499590820,
       "tag": "0001_fix_admin_history_ordering",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793583555866,
+      "tag": "0002_p2p_marketplace",
+      "breakpoints": true
     }
   ]
 }
