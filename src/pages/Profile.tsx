@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText } from "lucide-react";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -151,6 +151,10 @@ const Profile = () => {
               <ArrowLeftRight size={28} strokeWidth={1.8} />
               <span className="leading-tight">P2P — Comprar vb$</span>
             </Link>
+            <a href="https://whatsapp.com/channel/0029VbBl40G6BIEnrgYGsl2Z" target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+              <MessageCircle size={28} strokeWidth={1.8} />
+              <span className="leading-tight">Comodidade</span>
+            </a>
             <Link to="/wishlist" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <Heart size={28} strokeWidth={1.8} />
               <span className="leading-tight">Lista de desejos</span>
