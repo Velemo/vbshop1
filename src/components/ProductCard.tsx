@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-import { Product, activePrice, formatMt } from "@/lib/product";
+import { Product, activePrice, formatMt, applyVipDiscount } from "@/lib/product";
+import { useIsVip } from "@/hooks/useIsVip";
 import { isVideo } from "@/lib/media";
 
 type Props = {
@@ -11,6 +12,11 @@ type Props = {
 
 const ProductCard = ({ product, inWishlist, onToggleWishlist }: Props) => {
   const { price, promo, original } = activePrice(product);
+  const isVip = useIsVip();
+  const vipOn = isVip && !!product.vip_discount;
+  const vb = Math.round(price / 85 * 100) / 100;
+  const vipVb = applyVipDiscount(vb, isVip, product.vip_discount);
+  const vipMt = Math.round(price * 0.7);
   return (
     <div className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all">
       <Link to={`/product/${product.id}`} className="block relative aspect-square bg-muted overflow-hidden">
@@ -41,10 +47,24 @@ const ProductCard = ({ product, inWishlist, onToggleWishlist }: Props) => {
         <Link to={`/product/${product.id}`} className="block text-sm font-medium text-foreground line-clamp-2 leading-snug min-h-[2.5rem]">
           {product.name}
         </Link>
-        <div className="flex items-baseline gap-2 pt-1">
-          <span className="text-base font-display font-bold text-foreground">{formatMt(price)}</span>
-          {promo && <span className="text-xs text-muted-foreground line-through">{formatMt(original)}</span>}
-        </div>
+        {vipOn ? (
+          <div className="pt-1 space-y-0.5">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-base font-display font-bold text-foreground">{formatMt(vipMt)}</span>
+              <span className="text-xs text-muted-foreground line-through">{formatMt(price)}</span>
+            </div>
+            <div className="flex items-baseline gap-2 flex-wrap text-xs">
+              <span className="font-semibold text-foreground">{vipVb.toFixed(2)} vb$</span>
+              <span className="text-muted-foreground line-through">{vb.toFixed(2)} vb$</span>
+              <span className="font-medium text-primary">VIP -30%</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-baseline gap-2 pt-1">
+            <span className="text-base font-display font-bold text-foreground">{formatMt(price)}</span>
+            {promo && <span className="text-xs text-muted-foreground line-through">{formatMt(original)}</span>}
+          </div>
+        )}
       </div>
     </div>
   );

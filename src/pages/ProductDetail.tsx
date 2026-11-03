@@ -66,7 +66,7 @@ const ProductDetail = () => {
   useEffect(() => {
     load();
     if (!session) { setIsVip(false); return; }
-    (supabase as any).from("vip_memberships").select("user_id").eq("user_id", session.user.id).maybeSingle()
+    (supabase as any).rpc("is_vip", { _user_id: session.user.id })
       .then(({ data }: any) => setIsVip(!!data));
   }, [id, session?.user.id]);
 
