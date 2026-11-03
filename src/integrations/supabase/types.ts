@@ -124,6 +124,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sent_at: string | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sent_at?: string | null
+          title: string
+          url?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sent_at?: string | null
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       p2p_offers: {
         Row: {
           amount_vb: number
@@ -456,6 +486,33 @@ export type Database = {
           id?: string
           updated_at?: string
           user_code?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
           user_id?: string
         }
         Relationships: []
@@ -904,6 +961,14 @@ export type Database = {
         Returns: boolean
       }
       is_vip: { Args: { _user_id: string }; Returns: boolean }
+      notify_admins: {
+        Args: { _body: string; _title: string; _url: string }
+        Returns: undefined
+      }
+      notify_user: {
+        Args: { _body: string; _title: string; _url: string; _user: string }
+        Returns: undefined
+      }
       p2p_cancel_offer: { Args: { _offer_id: string }; Returns: number }
       p2p_cancel_order: { Args: { _order_id: string }; Returns: undefined }
       p2p_confirm_order: { Args: { _order_id: string }; Returns: undefined }

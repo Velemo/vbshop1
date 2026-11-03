@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
 import VipBadge from "@/components/VipBadge";
+import { InstallAppTile, NotificationsTile } from "@/components/ProfileAppActions";
 
 
 const Profile = () => {
@@ -162,6 +163,8 @@ const Profile = () => {
               <ArrowLeftRight size={28} strokeWidth={1.8} />
               <span className="leading-tight">P2P — Comprar vb$</span>
             </Link>
+            <InstallAppTile />
+            <NotificationsTile userId={session.user.id} />
             <a href="https://whatsapp.com/channel/0029VbBl40G6BIEnrgYGsl2Z" target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <MessageCircle size={28} strokeWidth={1.8} />
               <span className="leading-tight">Comodidade</span>
