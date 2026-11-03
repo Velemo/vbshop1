@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
 import VipBadge from "@/components/VipBadge";
+import ContactForm, { loadContact } from "@/components/ContactForm";
 
 
 type Slot = { position: number; image_url: string | null; label: string };
@@ -28,6 +29,7 @@ const Roleta = () => {
   const [winner, setWinner] = useState<number | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [hist, setHist] = useState<{ title: string; items: Hist[] } | null>(null);
   const alive = useRef(true);
 
@@ -43,6 +45,7 @@ const Roleta = () => {
   const spin = async () => {
     if (spinning || requireLogin()) return;
     if (tickets < 1) { toast.error("Sem bilhetes. Compre um bilhete para girar."); setBuyOpen(true); return; }
+    if (!(await loadContact(session!.user.id))) { setContactOpen(true); return; }
     setSpinning(true); setWinner(null);
     const { data, error } = await (supabase as any).rpc("spin_roulette");
     if (error) { toast.error(error.message); setSpinning(false); return; }
@@ -128,6 +131,15 @@ const Roleta = () => {
         <button onClick={() => openHist(true)} className={`${cardCls} flex items-center gap-2 p-3 text-sm`}><Globe size={20} /> Histórico Global <ChevronRight size={16} className="ml-auto" /></button>
       </div>
 
+      {contactOpen && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur grid place-items-center p-4" onClick={() => setContactOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h2 className="font-display font-semibold">Os seus dados</h2><button onClick={() => setContactOpen(false)} aria-label="Fechar"><X size={18} /></button></div>
+            <p className="text-xs text-muted-foreground">Antes do primeiro giro, indique os seus dados. Só o ADM os vê, para o contactar se ganhar um prémio.</p>
+            <ContactForm compact onSaved={() => setContactOpen(false)} />
+          </div>
+        </div>
+      )}
       {buyOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur grid place-items-center p-4" onClick={() => setBuyOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5" onClick={e => e.stopPropagation()}>

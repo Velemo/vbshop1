@@ -3,6 +3,7 @@ import { ArrowLeft, Sparkles, Square, Check, Shield, Mail, LogOut } from "lucide
 import { useSettings, SiteMode } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import ContactForm from "@/components/ContactForm";
 
 const options: { value: SiteMode; title: string; desc: string; icon: typeof Sparkles }[] = [
   {
@@ -42,6 +43,14 @@ const Settings = () => {
               <p className="mt-1 break-all text-sm text-muted-foreground">{session.user.email}</p>
               <p className="mt-1 text-xs text-muted-foreground">O seu email aparece apenas nas definições.</p>
             </div>
+          </section>
+        )}
+
+        {session && (
+          <section className="rounded-2xl border border-border bg-card p-4 space-y-2">
+            <h2 className="font-display text-sm font-semibold">Dados de contacto</h2>
+            <p className="text-xs text-muted-foreground">Nome: 1 alteração a cada 30 dias. Contacto e e-mail: 1 alteração a cada 15 dias.</p>
+            <ContactForm />
           </section>
         )}
 
