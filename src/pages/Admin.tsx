@@ -19,8 +19,8 @@ type PrizeContent = { position: number; prize_text: string; prize_link: string; 
 type Rule = { position: number; enabled: boolean; mode: "percent" | "goal" | "eligible"; weight: number; goal_spins: number; goal_counter: number; min_user_spins: number; deliveries_total: number; deliveries_done: number; eligible_active: boolean };
 const defaultRule = (position: number): Rule => ({ position, enabled: true, mode: "percent", weight: 10, goal_spins: 50, goal_counter: 0, min_user_spins: 0, deliveries_total: 1, deliveries_done: 0, eligible_active: false });
 type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
-type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null };
-const blankDelivery = (): Delivery => ({ content_text: "", content_link: "", media_url: "" });
+type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null; option_index?: number | null };
+const blankDelivery = (option_index: number | null = null): Delivery => ({ content_text: "", content_link: "", media_url: "", option_index });
 
 type AdForm = {
   id?: string;
@@ -49,10 +49,13 @@ type ProductForm = {
   seller_whatsapp: string;
   allow_discount?: boolean;
   vip_discount?: boolean;
+  options_enabled: boolean;
+  option_prices: string[];
   deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, deliveries: [] };
+const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, options_enabled: false, option_prices: [], deliveries: [] };
+const productMedia = (f: ProductForm) => [f.image_url, ...f.gallery].filter(Boolean);
 
 const Admin = () => {
   const { user: currentUser } = useAuth();
@@ -352,7 +355,7 @@ const Admin = () => {
 
   const startEdit = async (p?: Product) => {
     if (p) {
-      const { data, error } = await supabase.from("product_contents").select("delivery_order,product_id,content_text,content_link,media_url,delivered_at").eq("product_id", p.id).order("delivery_order");
+      const { data, error } = await supabase.from("product_contents").select("delivery_order,product_id,content_text,content_link,media_url,delivered_at,option_index").eq("product_id", p.id).order("delivery_order");
       if (error) { toast.error("Não foi possível carregar os conteúdos"); return; }
       setEditing({
         id: p.id, name: p.name, description: p.description, category: (p as any).category || "Mais",
@@ -361,6 +364,8 @@ const Admin = () => {
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
         promo_ends_at: p.promo_ends_at ? p.promo_ends_at.slice(0, 16) : "",
         stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount, vip_discount: !!(p as any).vip_discount,
+        options_enabled: !!(p as any).options_enabled,
+        option_prices: Array.isArray((p as any).option_prices) ? (p as any).option_prices.map((v: any) => v == null ? "" : String(v)) : [],
         deliveries: (data || []).map(d => ({ ...d, content_link: d.content_link || "", media_url: d.media_url || "" })),
       });
     } else setEditing({ ...empty });
@@ -373,6 +378,15 @@ const Admin = () => {
     }
     if (editing.deliveries.some(d => !d.delivered_at && (!d.content_text.trim() && !d.content_link.trim() && !d.media_url.trim() || d.content_link && !/^https?:\/\//i.test(d.content_link)))) {
       toast.error("Cada entrega precisa de texto, link válido ou ficheiro"); return;
+    }
+    const optionCount = productMedia(editing).length;
+    if (editing.options_enabled) {
+      if (!optionCount) { toast.error("Adicione imagens para criar opções"); return; }
+      for (let i = 0; i < optionCount; i++) {
+        const v = editing.option_prices[i];
+        if (v === undefined || v === "" || Number(v) < 0 || isNaN(Number(v))) { toast.error(`Defina o preço da opção ${i + 1}`); return; }
+      }
+      if (editing.deliveries.some(d => !d.delivered_at && (d.option_index == null || d.option_index >= optionCount))) { toast.error("Cada conteúdo precisa de uma opção válida"); return; }
     }
     setSavingProduct(true);
     const payload = {
@@ -388,6 +402,8 @@ const Admin = () => {
       seller_whatsapp: editing.seller_whatsapp.trim(),
       allow_discount: !!editing.allow_discount,
       vip_discount: !!editing.vip_discount,
+      options_enabled: editing.options_enabled,
+      option_prices: editing.options_enabled ? Array.from({ length: optionCount }, (_, i) => Number(editing.option_prices[i])) : [],
     };
     const result = editing.id
       ? await supabase.from("products").update(payload as any).eq("id", editing.id).select("id").single()
@@ -395,7 +411,7 @@ const Admin = () => {
     if (result.error || !result.data) { toast.error("Erro: " + (result.error?.message || "Produto indisponível")); setSavingProduct(false); return; }
     const pending = editing.deliveries.filter(d => !d.delivered_at);
     for (const d of pending) {
-      const row = { product_id: result.data.id, content_text: d.content_text.trim(), content_link: d.content_link.trim() || null, media_url: d.media_url || null };
+      const row = { product_id: result.data.id, content_text: d.content_text.trim(), content_link: d.content_link.trim() || null, media_url: d.media_url || null, option_index: editing.options_enabled ? d.option_index ?? 0 : null };
       const { error } = d.delivery_order
         ? await supabase.from("product_contents").update(row).eq("delivery_order", d.delivery_order).is("delivered_at", null)
         : await supabase.from("product_contents").insert(row);
