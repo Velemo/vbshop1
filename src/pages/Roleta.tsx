@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
+import VipBadge from "@/components/VipBadge";
+
 
 type Slot = { position: number; image_url: string | null; label: string };
-type Hist = { label: string; image_url: string | null; created_at: string; winner_name?: string | null; avatar_url?: string | null };
+type Hist = { label: string; image_url: string | null; created_at: string; winner_name?: string | null; avatar_url?: string | null; vip?: boolean | null };
 
 const PACKS = [{ qty: 1, price: 1.76 }, { qty: 2, price: 2.36 }];
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -165,6 +167,8 @@ const Roleta = () => {
                     <div className="mb-1 flex min-w-0 items-center gap-2">
                       {h.avatar_url ? <img src={h.avatar_url} alt="" className="size-7 shrink-0 rounded-full object-cover bg-muted" /> : <UserRound size={20} className="shrink-0 text-muted-foreground" />}
                       <span className="truncate text-xs font-medium">{h.winner_name || "Vencedor"}</span>
+                      {h.vip && <VipBadge />}
+
                     </div>
                   )}
                   <span className="block truncate">{h.label || "Prémio"}</span>
