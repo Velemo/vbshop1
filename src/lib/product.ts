@@ -10,6 +10,8 @@ export type Product = {
   promo_ends_at: string | null;
   stock: number;
   seller_whatsapp: string;
+  vip_discount?: boolean;
+
   created_at: string;
   updated_at: string;
 };
