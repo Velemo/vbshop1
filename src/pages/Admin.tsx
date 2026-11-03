@@ -19,8 +19,8 @@ type PrizeContent = { position: number; prize_text: string; prize_link: string; 
 type Rule = { position: number; enabled: boolean; mode: "percent" | "goal" | "eligible"; weight: number; goal_spins: number; goal_counter: number; min_user_spins: number; deliveries_total: number; deliveries_done: number; eligible_active: boolean };
 const defaultRule = (position: number): Rule => ({ position, enabled: true, mode: "percent", weight: 10, goal_spins: 50, goal_counter: 0, min_user_spins: 0, deliveries_total: 1, deliveries_done: 0, eligible_active: false });
 type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
-type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null };
-const blankDelivery = (): Delivery => ({ content_text: "", content_link: "", media_url: "" });
+type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null; option_index?: number | null };
+const blankDelivery = (option_index: number | null = null): Delivery => ({ content_text: "", content_link: "", media_url: "", option_index });
 
 type AdForm = {
   id?: string;
@@ -49,10 +49,13 @@ type ProductForm = {
   seller_whatsapp: string;
   allow_discount?: boolean;
   vip_discount?: boolean;
+  options_enabled: boolean;
+  option_prices: string[];
   deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, deliveries: [] };
+const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, options_enabled: false, option_prices: [], deliveries: [] };
+const productMedia = (f: ProductForm) => [f.image_url, ...f.gallery].filter(Boolean);
 
 const Admin = () => {
   const { user: currentUser } = useAuth();
@@ -352,7 +355,7 @@ const Admin = () => {
 
   const startEdit = async (p?: Product) => {
     if (p) {
-      const { data, error } = await supabase.from("product_contents").select("delivery_order,product_id,content_text,content_link,media_url,delivered_at").eq("product_id", p.id).order("delivery_order");
+      const { data, error } = await supabase.from("product_contents").select("delivery_order,product_id,content_text,content_link,media_url,delivered_at,option_index").eq("product_id", p.id).order("delivery_order");
       if (error) { toast.error("Não foi possível carregar os conteúdos"); return; }
       setEditing({
         id: p.id, name: p.name, description: p.description, category: (p as any).category || "Mais",
@@ -361,6 +364,8 @@ const Admin = () => {
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
         promo_ends_at: p.promo_ends_at ? p.promo_ends_at.slice(0, 16) : "",
         stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount, vip_discount: !!(p as any).vip_discount,
+        options_enabled: !!(p as any).options_enabled,
+        option_prices: Array.isArray((p as any).option_prices) ? (p as any).option_prices.map((v: any) => v == null ? "" : String(v)) : [],
         deliveries: (data || []).map(d => ({ ...d, content_link: d.content_link || "", media_url: d.media_url || "" })),
       });
     } else setEditing({ ...empty });
@@ -373,6 +378,15 @@ const Admin = () => {
     }
     if (editing.deliveries.some(d => !d.delivered_at && (!d.content_text.trim() && !d.content_link.trim() && !d.media_url.trim() || d.content_link && !/^https?:\/\//i.test(d.content_link)))) {
       toast.error("Cada entrega precisa de texto, link válido ou ficheiro"); return;
+    }
+    const optionCount = productMedia(editing).length;
+    if (editing.options_enabled) {
+      if (!optionCount) { toast.error("Adicione imagens para criar opções"); return; }
+      for (let i = 0; i < optionCount; i++) {
+        const v = editing.option_prices[i];
+        if (v === undefined || v === "" || Number(v) < 0 || isNaN(Number(v))) { toast.error(`Defina o preço da opção ${i + 1}`); return; }
+      }
+      if (editing.deliveries.some(d => !d.delivered_at && (d.option_index == null || d.option_index >= optionCount))) { toast.error("Cada conteúdo precisa de uma opção válida"); return; }
     }
     setSavingProduct(true);
     const payload = {
@@ -388,6 +402,8 @@ const Admin = () => {
       seller_whatsapp: editing.seller_whatsapp.trim(),
       allow_discount: !!editing.allow_discount,
       vip_discount: !!editing.vip_discount,
+      options_enabled: editing.options_enabled,
+      option_prices: editing.options_enabled ? Array.from({ length: optionCount }, (_, i) => Number(editing.option_prices[i])) : [],
     };
     const result = editing.id
       ? await supabase.from("products").update(payload as any).eq("id", editing.id).select("id").single()
@@ -395,7 +411,7 @@ const Admin = () => {
     if (result.error || !result.data) { toast.error("Erro: " + (result.error?.message || "Produto indisponível")); setSavingProduct(false); return; }
     const pending = editing.deliveries.filter(d => !d.delivered_at);
     for (const d of pending) {
-      const row = { product_id: result.data.id, content_text: d.content_text.trim(), content_link: d.content_link.trim() || null, media_url: d.media_url || null };
+      const row = { product_id: result.data.id, content_text: d.content_text.trim(), content_link: d.content_link.trim() || null, media_url: d.media_url || null, option_index: editing.options_enabled ? d.option_index ?? 0 : null };
       const { error } = d.delivery_order
         ? await supabase.from("product_contents").update(row).eq("delivery_order", d.delivery_order).is("delivered_at", null)
         : await supabase.from("product_contents").insert(row);
@@ -817,6 +833,24 @@ const Admin = () => {
               <input type="checkbox" checked={!!editing.vip_discount} onChange={e => setEditing({ ...editing, vip_discount: e.target.checked })} />
               Desconto VIP (30%)
             </label>
+            <section className="space-y-2 rounded-xl border border-border p-3">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={editing.options_enabled} onChange={e => setEditing({ ...editing, options_enabled: e.target.checked, deliveries: editing.deliveries.map(d => d.delivered_at ? d : { ...d, option_index: e.target.checked ? d.option_index ?? 0 : null }) })} />
+                Entrega automática por opção/imagem
+              </label>
+              <p className="text-xs text-muted-foreground">Cada imagem é uma opção com preço próprio. Cada compra entrega 1 conteúdo único da opção escolhida.</p>
+              {editing.options_enabled && productMedia(editing).map((m, o) => {
+                const left = editing.deliveries.filter(d => !d.delivered_at && (d.option_index ?? 0) === o).length;
+                return (
+                  <div key={o} className="flex items-center gap-2">
+                    {isVideo(m) ? <video src={m} muted className="w-12 h-12 rounded object-contain bg-muted"/> : <img src={m} alt="" className="w-12 h-12 rounded object-contain bg-muted"/>}
+                    <span className="text-xs font-medium w-16">Opção {o + 1}</span>
+                    <input type="number" min="0" placeholder="Preço MZN" value={editing.option_prices[o] ?? ""} onChange={e => { const next = [...editing.option_prices]; next[o] = e.target.value; setEditing({ ...editing, option_prices: next }); }} className="flex-1 min-w-0 p-2 rounded-lg bg-background border border-border text-sm"/>
+                    <span className={`text-xs ${left ? "text-muted-foreground" : "text-destructive"}`}>{left ? `${left} disp.` : "Esgotado"}</span>
+                  </div>
+                );
+              })}
+            </section>
             <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <label className="flex items-start gap-3 text-sm font-semibold">
                 <input type="checkbox" className="mt-1 size-4 accent-primary" />
@@ -856,7 +890,7 @@ const Admin = () => {
             <section className="space-y-3 border-t border-border pt-4">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-display font-semibold">Conteúdo depois do pagamento · Full Entregas</h3>
-                <Button type="button" size="sm" variant="outline" onClick={() => setEditing({ ...editing, deliveries: [...editing.deliveries, blankDelivery()] })}><Plus size={16} className="mr-1"/> Adicionar</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setEditing({ ...editing, deliveries: [...editing.deliveries, blankDelivery(editing.options_enabled ? 0 : null)] })}><Plus size={16} className="mr-1"/> Adicionar</Button>
               </div>
               <p className="text-xs text-muted-foreground">Uma entrega diferente por compra, na ordem abaixo. 1 vb$ = 85 Mt.</p>
               {editing.deliveries.map((d, i) => ({ d, i })).sort((a, b) => Number(!!a.d.delivered_at) - Number(!!b.d.delivered_at)).map(({ d, i }) => (
@@ -864,7 +898,12 @@ const Admin = () => {
                   <div className="flex justify-between items-center text-sm font-medium"><span>Entrega {i + 1} {d.delivered_at ? <span className="ml-1 inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-xs font-semibold">Entregue ✔️</span> : "· disponível"}</span>
                     {!d.delivered_at && <Button type="button" size="icon" variant="ghost" aria-label={`Remover entrega ${i + 1}`} onClick={() => removeDelivery(i)}><Trash2 size={15}/></Button>}
                   </div>
-                  <textarea aria-label={`Texto da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={4000} rows={2} value={d.content_text} onChange={e => updateDelivery(i, { content_text: e.target.value })} placeholder="Texto da entrega" className="w-full p-2 border border-border rounded-md bg-background text-sm" />
+                  {editing.options_enabled && (
+                    <select aria-label={`Opção da entrega ${i + 1}`} disabled={!!d.delivered_at} value={d.option_index ?? 0} onChange={e => updateDelivery(i, { option_index: Number(e.target.value) })} className="w-full p-2 border border-border rounded-md bg-background text-sm">
+                      {productMedia(editing).map((_, o) => <option key={o} value={o}>Opção {o + 1}</option>)}
+                    </select>
+                  )}
+                  <textarea aria-label={`Texto da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={4000} rows={2} value={d.content_text} onChange={e => updateDelivery(i, { content_text: e.target.value })} placeholder="Texto, código, conta ou link da entrega" className="w-full p-2 border border-border rounded-md bg-background text-sm" />
                   <input aria-label={`Link da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={2048} type="url" value={d.content_link} onChange={e => updateDelivery(i, { content_link: e.target.value })} placeholder="Link https://..." className="w-full p-2 border border-border rounded-md bg-background text-sm" />
                   {d.media_url && (isVideo(d.media_url) ? <video src={d.media_url} controls className="w-full max-h-40 object-contain" /> : <img src={d.media_url} alt="Conteúdo" className="w-full max-h-40 object-contain" />)}
                   {!d.delivered_at && <label className="flex items-center gap-2 text-sm text-primary cursor-pointer"><Upload size={16}/> Carregar imagem ou vídeo<input type="file" accept="image/*,video/*" className="hidden" onChange={e => onDeliveryMedia(i, e)}/></label>}

@@ -37,6 +37,7 @@ const ProductDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [isVip, setIsVip] = useState(false);
+  const [optionStock, setOptionStock] = useState<Record<number, number>>({});
   const { balance, refresh } = useWallet();
 
   const load = async () => {
@@ -45,6 +46,12 @@ const ProductDetail = () => {
     if (!data) return;
     const p = data as Product;
     setProduct(p);
+    if ((p as any).options_enabled) {
+      const { data: st } = await (supabase as any).rpc("product_option_stock", { _product_id: id });
+      const map: Record<number, number> = {};
+      (st || []).forEach((r: any) => { map[r.option_index] = Number(r.available); });
+      setOptionStock(map);
+    }
     setActiveImg(p.image_url || (Array.isArray(p.gallery) ? p.gallery.find((image): image is string => typeof image === "string" && !!image) : null) || null);
     const { data: rv } = await supabase.from("reviews").select("*").eq("product_id", id).order("created_at", { ascending: false });
     setReviews((rv as Review[]) || []);
@@ -65,12 +72,20 @@ const ProductDetail = () => {
 
   if (!product) return <div className="min-h-screen grid place-items-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"/></div>;
 
-  const { price, promo, original } = activePrice(product);
+  const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
+  const allImages = [product.image_url, ...gallery].filter((image): image is string => typeof image === "string" && !!image);
+  const optionsEnabled = !!(product as any).options_enabled;
+  const optionPrices: number[] = Array.isArray((product as any).option_prices) ? (product as any).option_prices.map(Number) : [];
+  const selectedOption = optionsEnabled ? Math.max(0, allImages.indexOf(activeImg || "")) : null;
+  const optionLeft = selectedOption != null ? optionStock[selectedOption] || 0 : 0;
+  const base = activePrice(product);
+  const price = selectedOption != null ? optionPrices[selectedOption] ?? 0 : base.price;
+  const promo = selectedOption != null ? false : base.promo;
+  const original = base.original;
   const vbPrice = Math.round(price / 85 * 100) / 100;
   const vipVbPrice = applyVipDiscount(vbPrice, isVip, !!(product as any).vip_discount);
   const finalVb = Math.round(vipVbPrice * (100 - pct)) / 100;
-  const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
-  const allImages = [product.image_url, ...gallery].filter((image): image is string => typeof image === "string" && !!image);
+  const soldOut = optionsEnabled ? optionLeft < 1 : product.stock < 1;
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
 
   const applyCode = async () => {
@@ -84,7 +99,7 @@ const ProductDetail = () => {
     if (!session) { navigate("/auth"); return; }
     if (purchasing) return;
     setPurchasing(true);
-    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null });
+    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null, _option: selectedOption });
     setPurchasing(false);
     if (error) { toast.error(error.message); return; }
     await refresh();
@@ -171,7 +186,7 @@ const ProductDetail = () => {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              {product.stock > 0 ? `${product.stock} disponíveis` : "Esgotado"}
+              {optionsEnabled ? `Opção ${(selectedOption ?? 0) + 1} · ${optionLeft > 0 ? `${optionLeft} disponíveis` : "Esgotada"} — toque nas imagens para escolher` : product.stock > 0 ? `${product.stock} disponíveis` : "Esgotado"}
             </p>
 
             <div className="space-y-2">
@@ -186,8 +201,8 @@ const ProductDetail = () => {
                 </div>
               )}
               {pct > 0 && <p className="text-xs text-primary">Desconto de {pct}% aplicado</p>}
-              <Button className="w-full" disabled={purchasing || product.stock < 1 || vbPrice <= 0} onClick={buyWithVb}>
-                {purchasing ? "A pagar..." : `Pagar com vb$ · ${formatVb(finalVb)}`}
+              <Button className="w-full" disabled={purchasing || soldOut || vbPrice <= 0} onClick={buyWithVb}>
+                {purchasing ? "A pagar..." : soldOut ? "Esgotado" : `Pagar com vb$ · ${formatVb(finalVb)}`}
               </Button>
             </div>
 

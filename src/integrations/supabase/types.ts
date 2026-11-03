@@ -235,6 +235,7 @@ export type Database = {
           delivered_to: string | null
           delivery_order: number
           media_url: string | null
+          option_index: number | null
           product_id: string
           updated_at: string
         }
@@ -246,6 +247,7 @@ export type Database = {
           delivered_to?: string | null
           delivery_order?: never
           media_url?: string | null
+          option_index?: number | null
           product_id: string
           updated_at?: string
         }
@@ -257,6 +259,7 @@ export type Database = {
           delivered_to?: string | null
           delivery_order?: never
           media_url?: string | null
+          option_index?: number | null
           product_id?: string
           updated_at?: string
         }
@@ -278,6 +281,7 @@ export type Database = {
           created_at: string
           id: string
           media_url: string | null
+          option_index: number | null
           paid_vb: number
           product_id: string | null
           product_name: string
@@ -291,6 +295,7 @@ export type Database = {
           created_at?: string
           id?: string
           media_url?: string | null
+          option_index?: number | null
           paid_vb: number
           product_id?: string | null
           product_name: string
@@ -304,6 +309,7 @@ export type Database = {
           created_at?: string
           id?: string
           media_url?: string | null
+          option_index?: number | null
           paid_vb?: number
           product_id?: string | null
           product_name?: string
@@ -330,6 +336,8 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          option_prices: Json
+          options_enabled: boolean
           price: number
           promo_ends_at: string | null
           promo_price: number | null
@@ -347,6 +355,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          option_prices?: Json
+          options_enabled?: boolean
           price?: number
           promo_ends_at?: string | null
           promo_price?: number | null
@@ -364,6 +374,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          option_prices?: Json
+          options_enabled?: boolean
           price?: number
           promo_ends_at?: string | null
           promo_price?: number | null
@@ -806,7 +818,7 @@ export type Database = {
         }[]
       }
       buy_product_vb: {
-        Args: { _code?: string; _product_id: string }
+        Args: { _code?: string; _option?: number; _product_id: string }
         Returns: number
       }
       buy_tickets: { Args: { _qty: number }; Returns: undefined }
@@ -862,6 +874,13 @@ export type Database = {
       p2p_submit_receipt: {
         Args: { _image_url: string; _note: string; _order_id: string }
         Returns: undefined
+      }
+      product_option_stock: {
+        Args: { _product_id: string }
+        Returns: {
+          available: number
+          option_index: number
+        }[]
       }
       redeem_code: { Args: { _code: string }; Returns: number }
       send_vb_by_user_code: {
