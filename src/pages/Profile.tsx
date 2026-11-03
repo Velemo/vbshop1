@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
+import VipBadge from "@/components/VipBadge";
+
 
 const Profile = () => {
   const { session } = useAuth();
@@ -18,6 +20,8 @@ const Profile = () => {
   const [savingName, setSavingName] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isVip, setIsVip] = useState(false);
+  const [vipExpires, setVipExpires] = useState<string | null>(null);
+
   const [showVipDetails, setShowVipDetails] = useState(false);
   const [vipLoading, setVipLoading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -31,8 +35,12 @@ const Profile = () => {
         if (data?.user_code) setUserCode(data.user_code);
         if (data?.avatar_url) setProfileAvatar(data.avatar_url);
       });
-    (supabase as any).from("vip_memberships").select("user_id").eq("user_id", session.user.id).maybeSingle()
-      .then(({ data }: any) => setIsVip(!!data));
+    (supabase as any).from("vip_memberships").select("expires_at").eq("user_id", session.user.id).maybeSingle()
+      .then(({ data }: any) => {
+        setVipExpires(data?.expires_at || null);
+        setIsVip(!!data?.expires_at && new Date(data.expires_at) > new Date());
+      });
+
   }, [session?.user.id]);
 
   const saveName = async () => {
@@ -86,15 +94,17 @@ const Profile = () => {
 
   const activateVip = async () => {
     if (!session || isVip || vipLoading) return;
-    if (balance < 10) { toast.error("Precisas de pelo menos 10 vb$ para ativar a Zona VIP."); return; }
+    if (balance < 10) { toast.error("Precisas de pelo menos 10 vb$ no saldo para ativar o VIP. O saldo não é descontado."); return; }
     setVipLoading(true);
     const { error } = await (supabase as any).rpc("activate_vip");
     setVipLoading(false);
     if (error) { toast.error(error.message || "Não foi possível ativar a Zona VIP."); return; }
     setIsVip(true);
+    setVipExpires(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
     await refresh();
-    toast.success("Zona VIP ativada com sucesso!");
+    toast.success("Zona VIP ativa por 30 dias! O seu saldo não foi descontado.");
   };
+
 
   const redeem = async () => {
     if (!code.trim()) return;
@@ -115,7 +125,8 @@ const Profile = () => {
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => { void uploadAvatar(e.target.files?.[0]); e.currentTarget.value = ""; }} />
             <div className="w-full max-w-sm">
               <div className="mb-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-center">
-                <p className="text-xs text-muted-foreground">ID do utilizador</p>
+                <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">ID do utilizador {isVip && <VipBadge />}</p>
+
                 <p className="font-mono text-base font-semibold tracking-wide">{userCode || "A gerar ID..."}</p>
               </div>
               <label htmlFor="profile-name" className="mb-1 block text-sm font-medium">Nome</label>
@@ -178,11 +189,19 @@ const Profile = () => {
           </div>
           {showVipDetails && <section className="mt-3 rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4">
             <div className="flex items-center gap-2 font-semibold"><Crown size={20} className="text-amber-400" /> Zona VIP {isVip && <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-500">VIP</span>}</div>
-            <p className="mt-2 text-sm text-muted-foreground">SELO VIP✔️
-30% de desconto em quase tudo no site✔️
-Vendas P2P✔️</p>
-            {!isVip && <Button className="mt-3 w-full" onClick={activateVip} disabled={vipLoading}>{vipLoading ? "A ativar..." : "Ativar Zona VIP — 10 vb$"}</Button>}
+            <p className="mt-2 text-sm text-muted-foreground">
+              SELO VIP em todo o site✔️
+              <br />Desconto VIP de 30% nos produtos marcados✔️
+              <br />Vendas P2P exclusivas para membros✔️
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {isVip && vipExpires
+                ? `VIP ativo até ${new Date(vipExpires).toLocaleDateString("pt-MZ")}.`
+                : "O VIP dura 30 dias. Para ativar ou renovar precisa de pelo menos 10 vb$ no saldo — o saldo nunca é descontado."}
+            </p>
+            {!isVip && <Button className="mt-3 w-full" onClick={activateVip} disabled={vipLoading}>{vipLoading ? "A ativar..." : vipExpires ? "Renovar VIP — 30 dias" : "Ativar Zona VIP"}</Button>}
           </section>}
+
           <Link to="/settings" className="mt-3 flex items-center gap-3 border-t border-border py-4 text-sm font-medium hover:text-primary"><Settings size={20} /> Definições</Link>
         </div>
       )}

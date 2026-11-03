@@ -2,7 +2,7 @@ export type UserSort = "newest" | "name-asc" | "name-desc" | "balance-desc" | "b
 export type AdminUser = {
   user_id: string; email: string | null; account_created_at: string;
   user_code: string | null; display_name: string | null; avatar_url: string | null;
-  balance: number; tickets: number; is_banned: boolean;
+  balance: number; tickets: number; is_banned: boolean; is_vip?: boolean;
 };
 
 export function filterAndSortUsers(users: AdminUser[], search: string, sort: UserSort) {

@@ -10,6 +10,8 @@ export type Product = {
   promo_ends_at: string | null;
   stock: number;
   seller_whatsapp: string;
+  vip_discount?: boolean;
+
   created_at: string;
   updated_at: string;
 };
@@ -20,6 +22,11 @@ export const activePrice = (p: Pick<Product, "price" | "promo_price" | "promo_en
   }
   return { price: Number(p.price), promo: false, original: Number(p.price) };
 };
+
+/** Produtos com "Desconto VIP" custam 30% menos para membros VIP. */
+export const applyVipDiscount = (vbPrice: number, isVip: boolean, vipDiscount?: boolean) =>
+  vipDiscount && isVip ? Math.round(vbPrice * 0.7 * 100) / 100 : vbPrice;
+
 
 export const formatMt = (v: number) =>
   new Intl.NumberFormat("pt-MZ", { style: "currency", currency: "MZN", maximumFractionDigits: 0 }).format(v);

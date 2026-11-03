@@ -22,6 +22,13 @@
       "when": 1793583555866,
       "tag": "0002_p2p_marketplace",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793669949903,
+      "tag": "0003_vip_benefits",
+      "breakpoints": true
     }
   ]
 }

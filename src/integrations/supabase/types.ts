@@ -336,6 +336,7 @@ export type Database = {
           seller_whatsapp: string
           stock: number
           updated_at: string
+          vip_discount: boolean
         }
         Insert: {
           allow_discount?: boolean
@@ -352,6 +353,7 @@ export type Database = {
           seller_whatsapp?: string
           stock?: number
           updated_at?: string
+          vip_discount?: boolean
         }
         Update: {
           allow_discount?: boolean
@@ -368,6 +370,7 @@ export type Database = {
           seller_whatsapp?: string
           stock?: number
           updated_at?: string
+          vip_discount?: boolean
         }
         Relationships: []
       }
@@ -701,16 +704,19 @@ export type Database = {
       vip_memberships: {
         Row: {
           activated_at: string
+          expires_at: string
           id: string
           user_id: string
         }
         Insert: {
           activated_at?: string
+          expires_at: string
           id?: string
           user_id: string
         }
         Update: {
           activated_at?: string
+          expires_at?: string
           id?: string
           user_id?: string
         }
@@ -784,6 +790,7 @@ export type Database = {
           display_name: string
           email: string
           is_banned: boolean
+          is_vip: boolean
           tickets: number
           user_code: string
           user_id: string
@@ -811,9 +818,12 @@ export type Database = {
       global_spins: {
         Args: never
         Returns: {
+          avatar_url: string
           created_at: string
           image_url: string
           label: string
+          vip: boolean
+          winner_name: string
         }[]
       }
       has_role: {
