@@ -8,6 +8,7 @@ import { uploadWithProgress } from "@/lib/upload";
 import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import RouletteAdmin from "@/components/admin/RouletteAdmin";
 import { filterAndSortUsers, type AdminUser, type UserSort } from "@/lib/admin-users";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
@@ -16,8 +17,8 @@ type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes";
 type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
-type Rule = { position: number; enabled: boolean; mode: "percent" | "goal" | "eligible"; weight: number; goal_spins: number; goal_counter: number; min_user_spins: number; deliveries_total: number; deliveries_done: number; eligible_active: boolean };
-const defaultRule = (position: number): Rule => ({ position, enabled: true, mode: "percent", weight: 10, goal_spins: 50, goal_counter: 0, min_user_spins: 0, deliveries_total: 1, deliveries_done: 0, eligible_active: false });
+type Rule = { position: number; enabled: boolean; mode: "percent" | "goal" | "eligible"; weight: number; goal_spins: number; goal_counter: number; min_user_spins: number; deliveries_total: number; deliveries_done: number; eligible_active: boolean; discount_percent: number | null; discount_days: number | null };
+const defaultRule = (position: number): Rule => ({ position, enabled: true, mode: "percent", weight: 10, goal_spins: 50, goal_counter: 0, min_user_spins: 0, deliveries_total: 1, deliveries_done: 0, eligible_active: false, discount_percent: null, discount_days: null });
 type Code = { id: string; code: string; amount: number; redeemed_by: string | null; created_at: string };
 type Delivery = { delivery_order?: number; product_id?: string; content_text: string; content_link: string; media_url: string; delivered_at?: string | null; option_index?: number | null };
 const blankDelivery = (option_index: number | null = null): Delivery => ({ content_text: "", content_link: "", media_url: "", option_index });
@@ -254,6 +255,8 @@ const Admin = () => {
       position, enabled: r.enabled, mode: r.mode, weight: Math.max(0, r.weight || 0),
       goal_spins: Math.max(1, Math.floor(r.goal_spins || 1)), min_user_spins: Math.max(0, Math.floor(r.min_user_spins || 0)),
       deliveries_total: Math.max(1, Math.floor(r.deliveries_total || 1)), eligible_active: r.eligible_active,
+      discount_percent: r.discount_percent && r.discount_percent >= 1 ? Math.min(100, Math.floor(r.discount_percent)) : null,
+      discount_days: r.discount_days && r.discount_days > 0 ? Math.floor(r.discount_days) : null,
     });
     if (error) toast.error("Erro: " + error.message); else { toast.success(`Regra do quadrado ${position + 1} guardada`); loadSlots(); }
   };
@@ -643,6 +646,7 @@ const Admin = () => {
         )}
         {tab === "roleta" && (
           <div className="space-y-3">
+            <RouletteAdmin onReset={loadSlots} />
             <p className="text-sm text-muted-foreground">Coloque uma imagem e o nome do prémio em cada um dos 10 quadrados da roleta (o 1 fica no topo, seguindo no sentido do relógio).</p>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {slots.map(sl => (
@@ -685,6 +689,8 @@ const Admin = () => {
                       </>}
                       {(r.mode === "goal" || r.mode === "eligible") && <label className="block">Mínimo de giros do utilizador<input type="number" min={0} value={r.min_user_spins} onChange={e => set({ min_user_spins: Number(e.target.value) })} className={inp}/></label>}
                       {r.mode === "eligible" && <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.eligible_active} onChange={e => set({ eligible_active: e.target.checked })}/> Ativo para o próximo elegível</label>}
+                      <label className="block">Código de desconto (%)<input type="number" min={0} max={100} placeholder="Sem código" value={r.discount_percent ?? ""} onChange={e => set({ discount_percent: e.target.value ? Number(e.target.value) : null })} className={inp}/></label>
+                      {!!r.discount_percent && <label className="block">Validade (dias, vazio = sem expiração)<input type="number" min={1} value={r.discount_days ?? ""} onChange={e => set({ discount_days: e.target.value ? Number(e.target.value) : null })} className={inp}/></label>}
                       <button onClick={() => saveRule(sl.position)} className="w-full p-1.5 rounded-md border border-primary text-primary font-semibold">Guardar regra</button>
                     </div>); })()}
                 </div>
