@@ -26,7 +26,9 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    if (!session) { setWishlist(new Set()); return; }
+    if (!session) { setIsVip(false); setWishlist(new Set()); return; }
+    supabase.from("vip_memberships").select("user_id").eq("user_id", session.user.id).maybeSingle()
+      .then(({ data }) => setIsVip(!!data));
     supabase.from("wishlists").select("product_id").eq("user_id", session.user.id)
       .then(({ data }) => setWishlist(new Set((data || []).map((w: any) => w.product_id))));
   }, [session]);
@@ -95,7 +97,7 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {filtered.map(p => (
-              <ProductCard key={p.id} product={p}
+              <ProductCard key={p.id} product={p} isVip={isVip}
                 inWishlist={wishlist.has(p.id)}
                 onToggleWishlist={() => toggleWishlist(p.id)} />
             ))}
