@@ -90,7 +90,7 @@ const App = () => (
               <Route path="/send-vb" element={<SendVb />} />
               <Route path="/p2p" element={<P2P />} />
               <Route path="/trend" element={<Trend />} />
-              <Route path="/pedidos" element={<AdminRoute><Pedidos /></AdminRoute>} />
+              <Route path="/pedidos" element={<Pedidos />} />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
