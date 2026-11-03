@@ -625,6 +625,8 @@ export type Database = {
           created_at: string
           deliveries_done: number
           deliveries_total: number
+          discount_days: number | null
+          discount_percent: number | null
           eligible_active: boolean
           enabled: boolean
           goal_counter: number
@@ -639,6 +641,8 @@ export type Database = {
           created_at?: string
           deliveries_done?: number
           deliveries_total?: number
+          discount_days?: number | null
+          discount_percent?: number | null
           eligible_active?: boolean
           enabled?: boolean
           goal_counter?: number
@@ -653,6 +657,8 @@ export type Database = {
           created_at?: string
           deliveries_done?: number
           deliveries_total?: number
+          discount_days?: number | null
+          discount_percent?: number | null
           eligible_active?: boolean
           enabled?: boolean
           goal_counter?: number
@@ -672,6 +678,24 @@ export type Database = {
             referencedColumns: ["position"]
           },
         ]
+      }
+      roulette_settings: {
+        Row: {
+          id: number
+          reset_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          reset_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          reset_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       roulette_slots: {
         Row: {
@@ -766,6 +790,39 @@ export type Database = {
           path?: string
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          email_changed_at: string
+          full_name: string
+          name_changed_at: string
+          phone: string
+          phone_changed_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          email_changed_at?: string
+          full_name: string
+          name_changed_at?: string
+          phone: string
+          phone_changed_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          email_changed_at?: string
+          full_name?: string
+          name_changed_at?: string
+          phone?: string
+          phone_changed_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -919,6 +976,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_reset_roulette: { Args: never; Returns: undefined }
+      admin_roulette_stats: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          full_name: string
+          last_spin: string
+          phone: string
+          spins: number
+          user_code: string
+          user_id: string
+          wins_total: number
+        }[]
+      }
       admin_user_history: {
         Args: { _user_id: string }
         Returns: {
@@ -1006,6 +1079,10 @@ export type Database = {
         }[]
       }
       redeem_code: { Args: { _code: string }; Returns: number }
+      save_contact: {
+        Args: { _email: string; _name: string; _phone: string }
+        Returns: undefined
+      }
       send_vb_by_user_code: {
         Args: { p_amount: number; p_recipient_code: string }
         Returns: Json
