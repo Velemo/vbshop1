@@ -833,6 +833,24 @@ const Admin = () => {
               <input type="checkbox" checked={!!editing.vip_discount} onChange={e => setEditing({ ...editing, vip_discount: e.target.checked })} />
               Desconto VIP (30%)
             </label>
+            <section className="space-y-2 rounded-xl border border-border p-3">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={editing.options_enabled} onChange={e => setEditing({ ...editing, options_enabled: e.target.checked, deliveries: editing.deliveries.map(d => d.delivered_at ? d : { ...d, option_index: e.target.checked ? d.option_index ?? 0 : null }) })} />
+                Entrega automática por opção/imagem
+              </label>
+              <p className="text-xs text-muted-foreground">Cada imagem é uma opção com preço próprio. Cada compra entrega 1 conteúdo único da opção escolhida.</p>
+              {editing.options_enabled && productMedia(editing).map((m, o) => {
+                const left = editing.deliveries.filter(d => !d.delivered_at && (d.option_index ?? 0) === o).length;
+                return (
+                  <div key={o} className="flex items-center gap-2">
+                    {isVideo(m) ? <video src={m} muted className="w-12 h-12 rounded object-contain bg-muted"/> : <img src={m} alt="" className="w-12 h-12 rounded object-contain bg-muted"/>}
+                    <span className="text-xs font-medium w-16">Opção {o + 1}</span>
+                    <input type="number" min="0" placeholder="Preço MZN" value={editing.option_prices[o] ?? ""} onChange={e => { const next = [...editing.option_prices]; next[o] = e.target.value; setEditing({ ...editing, option_prices: next }); }} className="flex-1 min-w-0 p-2 rounded-lg bg-background border border-border text-sm"/>
+                    <span className={`text-xs ${left ? "text-muted-foreground" : "text-destructive"}`}>{left ? `${left} disp.` : "Esgotado"}</span>
+                  </div>
+                );
+              })}
+            </section>
             <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <label className="flex items-start gap-3 text-sm font-semibold">
                 <input type="checkbox" className="mt-1 size-4 accent-primary" />
@@ -872,7 +890,7 @@ const Admin = () => {
             <section className="space-y-3 border-t border-border pt-4">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-display font-semibold">Conteúdo depois do pagamento · Full Entregas</h3>
-                <Button type="button" size="sm" variant="outline" onClick={() => setEditing({ ...editing, deliveries: [...editing.deliveries, blankDelivery()] })}><Plus size={16} className="mr-1"/> Adicionar</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setEditing({ ...editing, deliveries: [...editing.deliveries, blankDelivery(editing.options_enabled ? 0 : null)] })}><Plus size={16} className="mr-1"/> Adicionar</Button>
               </div>
               <p className="text-xs text-muted-foreground">Uma entrega diferente por compra, na ordem abaixo. 1 vb$ = 85 Mt.</p>
               {editing.deliveries.map((d, i) => ({ d, i })).sort((a, b) => Number(!!a.d.delivered_at) - Number(!!b.d.delivered_at)).map(({ d, i }) => (
@@ -880,7 +898,12 @@ const Admin = () => {
                   <div className="flex justify-between items-center text-sm font-medium"><span>Entrega {i + 1} {d.delivered_at ? <span className="ml-1 inline-flex items-center rounded-full bg-primary/15 text-primary px-2 py-0.5 text-xs font-semibold">Entregue ✔️</span> : "· disponível"}</span>
                     {!d.delivered_at && <Button type="button" size="icon" variant="ghost" aria-label={`Remover entrega ${i + 1}`} onClick={() => removeDelivery(i)}><Trash2 size={15}/></Button>}
                   </div>
-                  <textarea aria-label={`Texto da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={4000} rows={2} value={d.content_text} onChange={e => updateDelivery(i, { content_text: e.target.value })} placeholder="Texto da entrega" className="w-full p-2 border border-border rounded-md bg-background text-sm" />
+                  {editing.options_enabled && (
+                    <select aria-label={`Opção da entrega ${i + 1}`} disabled={!!d.delivered_at} value={d.option_index ?? 0} onChange={e => updateDelivery(i, { option_index: Number(e.target.value) })} className="w-full p-2 border border-border rounded-md bg-background text-sm">
+                      {productMedia(editing).map((_, o) => <option key={o} value={o}>Opção {o + 1}</option>)}
+                    </select>
+                  )}
+                  <textarea aria-label={`Texto da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={4000} rows={2} value={d.content_text} onChange={e => updateDelivery(i, { content_text: e.target.value })} placeholder="Texto, código, conta ou link da entrega" className="w-full p-2 border border-border rounded-md bg-background text-sm" />
                   <input aria-label={`Link da entrega ${i + 1}`} disabled={!!d.delivered_at} maxLength={2048} type="url" value={d.content_link} onChange={e => updateDelivery(i, { content_link: e.target.value })} placeholder="Link https://..." className="w-full p-2 border border-border rounded-md bg-background text-sm" />
                   {d.media_url && (isVideo(d.media_url) ? <video src={d.media_url} controls className="w-full max-h-40 object-contain" /> : <img src={d.media_url} alt="Conteúdo" className="w-full max-h-40 object-contain" />)}
                   {!d.delivered_at && <label className="flex items-center gap-2 text-sm text-primary cursor-pointer"><Upload size={16}/> Carregar imagem ou vídeo<input type="file" accept="image/*,video/*" className="hidden" onChange={e => onDeliveryMedia(i, e)}/></label>}
