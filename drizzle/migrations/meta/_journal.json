@@ -36,6 +36,13 @@
       "when": 1793722982335,
       "tag": "0004_product_options_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793723689897,
+      "tag": "0005_support_chat",
+      "breakpoints": true
     }
   ]
 }

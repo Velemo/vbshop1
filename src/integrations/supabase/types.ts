@@ -53,6 +53,47 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_admin: boolean
+          id: string
+          kind: string
+          order_id: string | null
+          sender_id: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_admin?: boolean
+          id?: string
+          kind?: string
+          order_id?: string | null
+          sender_id?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_admin?: boolean
+          id?: string
+          kind?: string
+          order_id?: string | null
+          sender_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "p2p_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_codes: {
         Row: {
           code: string
@@ -793,6 +834,19 @@ export type Database = {
     }
     Functions: {
       activate_vip: { Args: never; Returns: undefined }
+      admin_chat_threads: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          last_at: string
+          last_body: string
+          last_from_admin: boolean
+          user_code: string
+          user_id: string
+          vip: boolean
+        }[]
+      }
       admin_list_users: {
         Args: never
         Returns: {
@@ -822,6 +876,10 @@ export type Database = {
         Returns: number
       }
       buy_tickets: { Args: { _qty: number }; Returns: undefined }
+      chat_send: {
+        Args: { _body: string; _order_id?: string; _user_id: string }
+        Returns: string
+      }
       check_account_access: { Args: never; Returns: undefined }
       check_discount: {
         Args: { _code: string; _product_id: string }
