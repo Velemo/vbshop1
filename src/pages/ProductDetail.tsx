@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, Heart, MessageCircle, Star, Trash2 } from "lucide-react";
-import { Product, activePrice, formatMt, whatsappLink } from "@/lib/product";
+import { Product, activePrice, applyVipDiscount, formatMt, whatsappLink } from "@/lib/product";
 import { toast } from "sonner";
 import { isVideo } from "@/lib/media";
 import { useWallet, formatVb } from "@/hooks/useWallet";
@@ -36,6 +36,7 @@ const ProductDetail = () => {
   const [myComment, setMyComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const [isVip, setIsVip] = useState(false);
   const { balance, refresh } = useWallet();
 
   const load = async () => {
@@ -55,13 +56,19 @@ const ProductDetail = () => {
     }
   };
 
-  useEffect(() => { load(); }, [id, session?.user.id]);
+  useEffect(() => {
+    load();
+    if (!session) { setIsVip(false); return; }
+    (supabase as any).from("vip_memberships").select("user_id").eq("user_id", session.user.id).maybeSingle()
+      .then(({ data }: any) => setIsVip(!!data));
+  }, [id, session?.user.id]);
 
   if (!product) return <div className="min-h-screen grid place-items-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"/></div>;
 
   const { price, promo, original } = activePrice(product);
   const vbPrice = Math.round(price / 85 * 100) / 100;
-  const finalVb = Math.round(price / 85 * (100 - pct)) / 100;
+  const vipVbPrice = applyVipDiscount(vbPrice, isVip, !!(product as any).vip_discount);
+  const finalVb = Math.round(vipVbPrice * (100 - pct)) / 100;
   const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
   const allImages = [product.image_url, ...gallery].filter((image): image is string => typeof image === "string" && !!image);
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
@@ -168,7 +175,8 @@ const ProductDetail = () => {
             </p>
 
             <div className="space-y-2">
-              <p className="text-sm">{formatVb(finalVb)} {pct > 0 && <span className="line-through text-muted-foreground">{formatVb(vbPrice)}</span>} <span className="text-muted-foreground">· 1 vb$ = 85 Mt</span></p>
+              <p className="text-sm">{formatVb(finalVb)} {(pct > 0 || vipVbPrice < vbPrice) && <span className="line-through text-muted-foreground">{formatVb(vbPrice)}</span>} <span className="text-muted-foreground">· 1 vb$ = 85 Mt</span></p>
+              {isVip && (product as any).vip_discount && <p className="text-xs font-medium text-amber-600">Selo VIP · 30% de desconto aplicado</p>}
               {session && <p className="text-xs text-muted-foreground">Saldo: {formatVb(balance)}</p>}
               {(product as any).allow_discount && session && (
                 <div className="flex gap-2">
