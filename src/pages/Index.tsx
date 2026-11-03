@@ -17,6 +17,7 @@ const Index = () => {
   const [q, setQ] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [loading, setLoading] = useState(true);
+  const [isVip, setIsVip] = useState(false);
   const categories = ["Todos", "MODs", "Jogos", "Eletrónicos", "Pro Digital", "Mais"];
 
   useEffect(() => {
