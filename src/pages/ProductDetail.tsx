@@ -186,7 +186,7 @@ const ProductDetail = () => {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              {product.stock > 0 ? `${product.stock} disponíveis` : "Esgotado"}
+              {optionsEnabled ? `Opção ${(selectedOption ?? 0) + 1} · ${optionLeft > 0 ? `${optionLeft} disponíveis` : "Esgotada"} — toque nas imagens para escolher` : product.stock > 0 ? `${product.stock} disponíveis` : "Esgotado"}
             </p>
 
             <div className="space-y-2">
@@ -201,8 +201,8 @@ const ProductDetail = () => {
                 </div>
               )}
               {pct > 0 && <p className="text-xs text-primary">Desconto de {pct}% aplicado</p>}
-              <Button className="w-full" disabled={purchasing || product.stock < 1 || vbPrice <= 0} onClick={buyWithVb}>
-                {purchasing ? "A pagar..." : `Pagar com vb$ · ${formatVb(finalVb)}`}
+              <Button className="w-full" disabled={purchasing || soldOut || vbPrice <= 0} onClick={buyWithVb}>
+                {purchasing ? "A pagar..." : soldOut ? "Esgotado" : `Pagar com vb$ · ${formatVb(finalVb)}`}
               </Button>
             </div>
 
