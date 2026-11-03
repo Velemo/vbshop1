@@ -48,10 +48,11 @@ type ProductForm = {
   stock: string;
   seller_whatsapp: string;
   allow_discount?: boolean;
+  vip_discount?: boolean;
   deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, deliveries: [] };
+const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, deliveries: [] };
 
 const Admin = () => {
   const { user: currentUser } = useAuth();
@@ -359,7 +360,7 @@ const Admin = () => {
         gallery: Array.isArray(p.gallery) ? p.gallery : [],
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
         promo_ends_at: p.promo_ends_at ? p.promo_ends_at.slice(0, 16) : "",
-        stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount,
+        stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount, vip_discount: !!(p as any).vip_discount,
         deliveries: (data || []).map(d => ({ ...d, content_link: d.content_link || "", media_url: d.media_url || "" })),
       });
     } else setEditing({ ...empty });
@@ -386,6 +387,7 @@ const Admin = () => {
       stock: parseInt(editing.stock) || 0,
       seller_whatsapp: editing.seller_whatsapp.trim(),
       allow_discount: !!editing.allow_discount,
+      vip_discount: !!editing.vip_discount,
     };
     const result = editing.id
       ? await supabase.from("products").update(payload as any).eq("id", editing.id).select("id").single()
@@ -517,7 +519,7 @@ const Admin = () => {
                     <div className="size-12 shrink-0 overflow-hidden rounded-full border border-border bg-secondary grid place-items-center">
                       {user.avatar_url ? <img src={user.avatar_url} alt={`Foto de ${user.display_name || "utilizador"}`} className="size-full object-cover" /> : <span className="text-sm font-semibold text-muted-foreground">{(user.display_name || user.user_code || "?").slice(0, 1).toUpperCase()}</span>}
                     </div>
-                    <div className="min-w-0 flex-1"><p className="font-semibold truncate">{user.display_name || "Sem nome"}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1 break-all">ID: {user.user_code || "Pendente"}</p><p className={`text-xs mt-1 ${user.is_banned ? "text-destructive" : "text-muted-foreground"}`}>{user.is_banned ? "Banida" : "Ativa"}</p></div>
+                    <div className="min-w-0 flex-1"><p className="font-semibold truncate">{user.display_name || "Sem nome"} {user.is_vip && <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600"><Crown size={10}/> VIP</span>}</p><p className="text-xs text-muted-foreground truncate">{user.email || "Sem email"}</p><p className="font-mono text-xs text-primary mt-1 break-all">ID: {user.user_code || "Pendente"}</p><p className={`text-xs mt-1 ${user.is_banned ? "text-destructive" : "text-muted-foreground"}`}>{user.is_banned ? "Banida" : "Ativa"}</p></div>
                     <div className="min-w-0 max-w-[40%] text-right"><p className="font-semibold break-words">{Number(user.balance || 0).toLocaleString("pt-MZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} vb$</p><p className="text-xs text-muted-foreground">{user.tickets} bilhete(s)</p><p className="text-[11px] text-muted-foreground mt-1">{new Date(user.account_created_at).toLocaleDateString("pt-MZ")}</p></div>
                   </div>
                 </Button>
@@ -810,6 +812,10 @@ const Admin = () => {
             <label className="flex items-center gap-2 text-sm font-medium">
               <input type="checkbox" checked={!!editing.allow_discount} onChange={e => setEditing({ ...editing, allow_discount: e.target.checked })} />
               Aceitar código de desconto
+            </label>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={!!editing.vip_discount} onChange={e => setEditing({ ...editing, vip_discount: e.target.checked })} />
+              Desconto VIP (30%)
             </label>
             <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <label className="flex items-start gap-3 text-sm font-semibold">
