@@ -5,7 +5,7 @@ import { isVideo } from "@/lib/media";
 
 type Props = {
   product: Product;
-  inWishlist?: boolean;
+  isVip?: boolean;\n  inWishlist?: boolean;
   onToggleWishlist?: () => void;
 };
 
