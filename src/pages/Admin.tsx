@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon, Music, Play, Pause, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Eye, Upload, X, Image as ImageIcon, Music, Play, Pause, RefreshCw, Crown } from "lucide-react";
 import { Product, formatMt } from "@/lib/product";
 import { toast } from "sonner";
 import { uploadWithProgress } from "@/lib/upload";
