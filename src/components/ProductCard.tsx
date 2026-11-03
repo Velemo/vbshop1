@@ -5,17 +5,12 @@ import { isVideo } from "@/lib/media";
 
 type Props = {
   product: Product;
-  isVip?: boolean;
   inWishlist?: boolean;
   onToggleWishlist?: () => void;
 };
 
-const ProductCard = ({ product, isVip = false, inWishlist, onToggleWishlist }: Props) => {
-  const { price, promo } = activePrice(product);
-  const vipDiscountActive = isVip && !!product.vip_discount;
-  const displayedPrice = vipDiscountActive ? Math.round(price * 0.7) : price;
-  const vbPrice = Math.round((displayedPrice / 85) * 100) / 100;
-  const originalVbPrice = Math.round((price / 85) * 100) / 100;
+const ProductCard = ({ product, inWishlist, onToggleWishlist }: Props) => {
+  const { price, promo, original } = activePrice(product);
   return (
     <div className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all">
       <Link to={`/product/${product.id}`} className="block relative aspect-square bg-muted overflow-hidden">
@@ -46,16 +41,9 @@ const ProductCard = ({ product, isVip = false, inWishlist, onToggleWishlist }: P
         <Link to={`/product/${product.id}`} className="block text-sm font-medium text-foreground line-clamp-2 leading-snug min-h-[2.5rem]">
           {product.name}
         </Link>
-        <div className="pt-1 space-y-1">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-base font-display font-bold text-foreground">{formatMt(displayedPrice)}</span>
-            {(promo || vipDiscountActive) && <span className="text-xs text-muted-foreground line-through">{formatMt(price)}</span>}
-          </div>
-          <div className="flex flex-wrap items-baseline gap-2 text-xs">
-            <span className="font-semibold text-foreground">{vbPrice.toFixed(2)} vb$</span>
-            {(promo || vipDiscountActive) && <span className="text-muted-foreground line-through">{originalVbPrice.toFixed(2)} vb$</span>}
-            {vipDiscountActive && <span className="font-semibold text-amber-600">VIP -30%</span>}
-          </div>
+        <div className="flex items-baseline gap-2 pt-1">
+          <span className="text-base font-display font-bold text-foreground">{formatMt(price)}</span>
+          {promo && <span className="text-xs text-muted-foreground line-through">{formatMt(original)}</span>}
         </div>
       </div>
     </div>

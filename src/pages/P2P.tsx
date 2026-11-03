@@ -199,21 +199,14 @@ export default function P2P() {
   const [myOffers, setMyOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isVip, setIsVip] = useState(false);
-  const [vipSellerIds, setVipSellerIds] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [buying, setBuying] = useState<Offer | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await (supabase as any).from("p2p_offers").select("*").order("created_at", { ascending: false });
     const all = (data || []) as Offer[];
-    const active = all.filter(o => o.status === "active");
-    setOffers(active);
-    const sellerIds = [...new Set(active.map(o => o.seller_id))];
-    if (sellerIds.length) {
-      const { data: vipRows } = await (supabase as any).from("vip_memberships").select("user_id").in("user_id", sellerIds);
-      setVipSellerIds((vipRows || []).map((row: any) => row.user_id));
-    } else setVipSellerIds([]);
-    setMyOffers(active.filter(o => session && o.seller_id === session.user.id));
+    setOffers(all.filter(o => o.status === "active"));
+    setMyOffers(all.filter(o => o.status === "active" && session && o.seller_id === session.user.id));
     setLoading(false);
   }, [session?.user.id]);
 
@@ -281,7 +274,7 @@ export default function P2P() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold">{formatVb(available(o))} disponíveis</p>
-                          <p className="text-sm text-muted-foreground">{fmtMt(Number(o.price_per_vb))} MT por vb$ · {o.seller_name} {vipSellerIds.includes(o.seller_id) && <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600"><Crown size={10}/> VIP</span>}</p>
+                          <p className="text-sm text-muted-foreground">{fmtMt(Number(o.price_per_vb))} MT por vb$ · {o.seller_name}</p>
                         </div>
                         <div className="flex gap-1">
                           {methods(o).map(m => <span key={m} className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{m}</span>)}

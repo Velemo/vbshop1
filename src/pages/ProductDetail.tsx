@@ -66,7 +66,7 @@ const ProductDetail = () => {
   if (!product) return <div className="min-h-screen grid place-items-center"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"/></div>;
 
   const { price, promo, original } = activePrice(product);
-  const vipMtPrice = isVip && (product as any).vip_discount ? Math.round(price * 0.7) : price;\n  const vbPrice = Math.round(price / 85 * 100) / 100;
+  const vbPrice = Math.round(price / 85 * 100) / 100;
   const vipVbPrice = applyVipDiscount(vbPrice, isVip, !!(product as any).vip_discount);
   const finalVb = Math.round(vipVbPrice * (100 - pct)) / 100;
   const gallery: string[] = Array.isArray(product.gallery) ? product.gallery.filter((image): image is string => typeof image === "string" && !!image) : [];
