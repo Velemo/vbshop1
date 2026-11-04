@@ -21,7 +21,7 @@ const fetchVip = (uid: string) => {
 export const useIsVip = () => {
   const { session } = useAuth();
   const uid = session?.user.id;
-  const [vip, setVip] = useState(cache?.uid === uid ? cache!.vip : false);
+  const [vip, setVip] = useState(!!uid && cache?.uid === uid ? cache.vip : false);
   useEffect(() => {
     if (!uid) { setVip(false); return; }
     let alive = true;
