@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isVideo } from "@/lib/media";
 
 type PrizeMail = { id: string; label: string; image_url: string | null; prize_text: string; prize_link: string | null; prize_video_url: string | null; created_at: string };
-type ProductMail = { id: string; product_name: string; paid_vb: number; content_text: string; content_link: string | null; media_url: string | null; created_at: string };
+type ProductMail = { id: string; product_name: string; paid_vb: number; content_text: string; content_link: string | null; media_url: string | null; created_at: string; buyer_question?: string | null; buyer_answer?: string | null };
 
 const Correio = () => {
   const { session, loading: authLoading } = useAuth();
@@ -21,7 +21,7 @@ const Correio = () => {
     setLoading(true);
     Promise.all([
       supabase.from("prize_mail").select("id,label,image_url,prize_text,prize_link,prize_video_url,created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
-      supabase.from("product_mail").select("id,product_name,paid_vb,content_text,content_link,media_url,created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
+      supabase.from("product_mail").select("id,product_name,paid_vb,content_text,content_link,media_url,created_at,buyer_question,buyer_answer").eq("user_id", session.user.id).order("created_at", { ascending: false }),
     ]).then(([prizes, products]) => {
       setMessages(prizes.data || []); setPurchases(products.data || []); setError(!!prizes.error || !!products.error); setLoading(false);
     });
@@ -43,6 +43,7 @@ const Correio = () => {
             {purchases.length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há entregas de compras.</p> : <div className="space-y-4">
           {purchases.map(item => <article key={item.id} className="border-b border-border py-4 space-y-3">
             <div><h2 className="font-semibold break-words">{item.product_name}</h2><p className="text-xs text-muted-foreground">Compra · {Number(item.paid_vb).toFixed(2)} vb$ · {new Date(item.created_at).toLocaleString("pt-MZ")}</p></div>
+            {item.buyer_answer && <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{item.buyer_question}<br />Resposta: {item.buyer_answer}</p>}
             {item.content_text && <p className="text-sm whitespace-pre-wrap break-words">{item.content_text}</p>}
             {item.media_url && (isVideo(item.media_url) ? <video src={item.media_url} controls playsInline preload="metadata" className="w-full max-h-80 object-contain" /> : <img src={item.media_url} alt="Conteúdo da compra" className="w-full max-h-80 object-contain" />)}
             {item.content_link && /^https?:\/\//i.test(item.content_link) && <a href={item.content_link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline break-all">Abrir conteúdo</a>}
