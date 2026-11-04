@@ -99,7 +99,7 @@ const ProductDetail = () => {
     if (!session) { navigate("/auth"); return; }
     if (purchasing) return;
     setPurchasing(true);
-    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null, _option: selectedOption });
+    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null, _option: selectedOption, _answer: needQ ? answer.trim() : null });
     setPurchasing(false);
     if (error) { toast.error(error.message); return; }
     await refresh();
@@ -199,6 +199,11 @@ const ProductDetail = () => {
                     className="flex-1 min-w-0 rounded-lg border border-border bg-background p-2 text-sm" />
                   <Button variant="outline" onClick={applyCode}>Aplicar</Button>
                 </div>
+              )}
+              {needQ && session && (
+                <label className="block space-y-1 text-sm font-medium">{(product as any).buyer_question} *
+                  <textarea rows={3} maxLength={1000} value={answer} onChange={e => setAnswer(e.target.value)} placeholder="A sua resposta (obrigatória)" className="w-full rounded-lg border border-border bg-background p-2 text-sm font-normal" />
+                </label>
               )}
               {pct > 0 && <p className="text-xs text-primary">Desconto de {pct}% aplicado</p>}
               <Button className="w-full" disabled={purchasing || soldOut || vbPrice <= 0} onClick={buyWithVb}>
