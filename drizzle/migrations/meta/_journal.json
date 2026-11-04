@@ -57,6 +57,13 @@
       "when": 1793724775957,
       "tag": "0007_roulette_admin_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793750816924,
+      "tag": "0008_product_required_question",
+      "breakpoints": true
     }
   ]
 }

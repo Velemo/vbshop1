@@ -346,6 +346,8 @@ export type Database = {
       }
       product_mail: {
         Row: {
+          buyer_answer: string | null
+          buyer_question: string | null
           content_link: string | null
           content_order: number
           content_text: string
@@ -360,6 +362,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          buyer_answer?: string | null
+          buyer_question?: string | null
           content_link?: string | null
           content_order: number
           content_text?: string
@@ -374,6 +378,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          buyer_answer?: string | null
+          buyer_question?: string | null
           content_link?: string | null
           content_order?: number
           content_text?: string
@@ -400,6 +406,7 @@ export type Database = {
       products: {
         Row: {
           allow_discount: boolean
+          buyer_question: string | null
           category: string
           created_at: string
           description: string
@@ -412,6 +419,7 @@ export type Database = {
           price: number
           promo_ends_at: string | null
           promo_price: number | null
+          require_question: boolean
           seller_whatsapp: string
           stock: number
           updated_at: string
@@ -419,6 +427,7 @@ export type Database = {
         }
         Insert: {
           allow_discount?: boolean
+          buyer_question?: string | null
           category?: string
           created_at?: string
           description?: string
@@ -431,6 +440,7 @@ export type Database = {
           price?: number
           promo_ends_at?: string | null
           promo_price?: number | null
+          require_question?: boolean
           seller_whatsapp?: string
           stock?: number
           updated_at?: string
@@ -438,6 +448,7 @@ export type Database = {
         }
         Update: {
           allow_discount?: boolean
+          buyer_question?: string | null
           category?: string
           created_at?: string
           description?: string
@@ -450,6 +461,7 @@ export type Database = {
           price?: number
           promo_ends_at?: string | null
           promo_price?: number | null
+          require_question?: boolean
           seller_whatsapp?: string
           stock?: number
           updated_at?: string
@@ -1002,7 +1014,12 @@ export type Database = {
         }[]
       }
       buy_product_vb: {
-        Args: { _code?: string; _option?: number; _product_id: string }
+        Args: {
+          _answer?: string
+          _code?: string
+          _option?: number
+          _product_id: string
+        }
         Returns: number
       }
       buy_tickets: { Args: { _qty: number }; Returns: undefined }
