@@ -29,6 +29,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImg, setActiveImg] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState("");
+  const [answer, setAnswer] = useState("");
   const [pct, setPct] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [inWishlist, setInWishlist] = useState(false);
@@ -82,6 +83,7 @@ const ProductDetail = () => {
   const price = selectedOption != null ? optionPrices[selectedOption] ?? 0 : base.price;
   const promo = selectedOption != null ? false : base.promo;
   const original = base.original;
+  const needQ = !!(product as any)?.require_question && !!(product as any)?.buyer_question?.trim();
   const vbPrice = Math.round(price / 85 * 100) / 100;
   const vipVbPrice = applyVipDiscount(vbPrice, isVip, !!(product as any).vip_discount);
   const finalVb = Math.round(vipVbPrice * (100 - pct)) / 100;
@@ -96,10 +98,11 @@ const ProductDetail = () => {
   };
 
   const buyWithVb = async () => {
+    if (needQ && !answer.trim()) { toast.error("Responda à pergunta antes de pagar"); return; }
     if (!session) { navigate("/auth"); return; }
     if (purchasing) return;
     setPurchasing(true);
-    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null, _option: selectedOption });
+    const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null, _option: selectedOption, _answer: needQ ? answer.trim() : null });
     setPurchasing(false);
     if (error) { toast.error(error.message); return; }
     await refresh();
@@ -199,6 +202,11 @@ const ProductDetail = () => {
                     className="flex-1 min-w-0 rounded-lg border border-border bg-background p-2 text-sm" />
                   <Button variant="outline" onClick={applyCode}>Aplicar</Button>
                 </div>
+              )}
+              {needQ && session && (
+                <label className="block space-y-1 text-sm font-medium">{(product as any).buyer_question} *
+                  <textarea rows={3} maxLength={1000} value={answer} onChange={e => setAnswer(e.target.value)} placeholder="A sua resposta (obrigatória)" className="w-full rounded-lg border border-border bg-background p-2 text-sm font-normal" />
+                </label>
               )}
               {pct > 0 && <p className="text-xs text-primary">Desconto de {pct}% aplicado</p>}
               <Button className="w-full" disabled={purchasing || soldOut || vbPrice <= 0} onClick={buyWithVb}>

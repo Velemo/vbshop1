@@ -50,12 +50,14 @@ type ProductForm = {
   seller_whatsapp: string;
   allow_discount?: boolean;
   vip_discount?: boolean;
+  require_question?: boolean;
+  buyer_question?: string;
   options_enabled: boolean;
   option_prices: string[];
   deliveries: Delivery[];
 };
 
-const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, options_enabled: false, option_prices: [], deliveries: [] };
+const empty: ProductForm = { name: "", description: "", category: "Mais", image_url: "", gallery: [], price: "", promo_price: "", promo_ends_at: "", stock: "1", seller_whatsapp: "", allow_discount: false, vip_discount: false, require_question: false, buyer_question: "", options_enabled: false, option_prices: [], deliveries: [] };
 const productMedia = (f: ProductForm) => [f.image_url, ...f.gallery].filter(Boolean);
 
 const Admin = () => {
@@ -366,7 +368,7 @@ const Admin = () => {
         gallery: Array.isArray(p.gallery) ? p.gallery : [],
         price: String(p.price), promo_price: p.promo_price != null ? String(p.promo_price) : "",
         promo_ends_at: p.promo_ends_at ? p.promo_ends_at.slice(0, 16) : "",
-        stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount, vip_discount: !!(p as any).vip_discount,
+        stock: String(p.stock), seller_whatsapp: p.seller_whatsapp, allow_discount: !!(p as any).allow_discount, vip_discount: !!(p as any).vip_discount, require_question: !!(p as any).require_question, buyer_question: (p as any).buyer_question || "",
         options_enabled: !!(p as any).options_enabled,
         option_prices: Array.isArray((p as any).option_prices) ? (p as any).option_prices.map((v: any) => v == null ? "" : String(v)) : [],
         deliveries: (data || []).map(d => ({ ...d, content_link: d.content_link || "", media_url: d.media_url || "" })),
@@ -405,6 +407,8 @@ const Admin = () => {
       seller_whatsapp: editing.seller_whatsapp.trim(),
       allow_discount: !!editing.allow_discount,
       vip_discount: !!editing.vip_discount,
+      require_question: !!editing.require_question && !!editing.buyer_question?.trim(),
+      buyer_question: editing.buyer_question?.trim() || null,
       options_enabled: editing.options_enabled,
       option_prices: editing.options_enabled ? Array.from({ length: optionCount }, (_, i) => Number(editing.option_prices[i])) : [],
     };
@@ -859,13 +863,13 @@ const Admin = () => {
             </section>
             <section className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <label className="flex items-start gap-3 text-sm font-semibold">
-                <input type="checkbox" className="mt-1 size-4 accent-primary" />
+                <input type="checkbox" className="mt-1 size-4 accent-primary" checked={!!editing.require_question} onChange={e => setEditing({ ...editing, require_question: e.target.checked })} />
                 <span>Pergunta obrigatória antes do pagamento
                   <span className="mt-1 block text-xs font-normal text-muted-foreground">Ative para mostrar uma pergunta ao cliente antes de pagar com vb$.</span>
                 </span>
               </label>
               <label className="block space-y-1 text-xs font-medium">Pergunta para o cliente
-                <textarea rows={3} maxLength={500} placeholder="Escreva aqui a pergunta que o cliente deverá responder..." className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-normal" />
+                <textarea rows={3} maxLength={500} value={editing.buyer_question || ""} onChange={e => setEditing({ ...editing, buyer_question: e.target.value })} placeholder="Escreva aqui a pergunta que o cliente deverá responder..." className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-normal" />
               </label>
             </section>
             {[
