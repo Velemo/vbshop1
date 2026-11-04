@@ -29,6 +29,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImg, setActiveImg] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState("");
+  const [answer, setAnswer] = useState("");
   const [pct, setPct] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [inWishlist, setInWishlist] = useState(false);
@@ -82,6 +83,7 @@ const ProductDetail = () => {
   const price = selectedOption != null ? optionPrices[selectedOption] ?? 0 : base.price;
   const promo = selectedOption != null ? false : base.promo;
   const original = base.original;
+  const needQ = !!(product as any)?.require_question && !!(product as any)?.buyer_question?.trim();
   const vbPrice = Math.round(price / 85 * 100) / 100;
   const vipVbPrice = applyVipDiscount(vbPrice, isVip, !!(product as any).vip_discount);
   const finalVb = Math.round(vipVbPrice * (100 - pct)) / 100;
@@ -96,6 +98,7 @@ const ProductDetail = () => {
   };
 
   const buyWithVb = async () => {
+    if (needQ && !answer.trim()) { toast.error("Responda à pergunta antes de pagar"); return; }
     if (!session) { navigate("/auth"); return; }
     if (purchasing) return;
     setPurchasing(true);
