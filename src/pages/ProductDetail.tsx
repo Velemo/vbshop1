@@ -30,6 +30,7 @@ const ProductDetail = () => {
   const [activeImg, setActiveImg] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState("");
   const [answer, setAnswer] = useState("");
+  const [askOpen, setAskOpen] = useState(false);
   const [pct, setPct] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [inWishlist, setInWishlist] = useState(false);
@@ -87,7 +88,7 @@ const ProductDetail = () => {
   const vbPrice = Math.round(price / 85 * 100) / 100;
   const vipVbPrice = applyVipDiscount(vbPrice, isVip, !!(product as any).vip_discount);
   const finalVb = Math.round(vipVbPrice * (100 - pct)) / 100;
-  const soldOut = optionsEnabled ? optionLeft < 1 : product.stock < 1;
+  const soldOut = optionsEnabled ? (!needQ && optionLeft < 1) : product.stock < 1;
   const avgRating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
 
   const applyCode = async () => {
@@ -98,16 +99,18 @@ const ProductDetail = () => {
   };
 
   const buyWithVb = async () => {
-    if (needQ && !answer.trim()) { toast.error("Responda à pergunta antes de pagar"); return; }
     if (!session) { navigate("/auth"); return; }
     if (purchasing) return;
+    if (needQ && !answer.trim()) { setAskOpen(true); return; }
+    setAskOpen(false);
     setPurchasing(true);
     const { error } = await (supabase as any).rpc("buy_product_vb", { _product_id: product.id, _code: pct > 0 ? discountCode.trim() : null, _option: selectedOption, _answer: needQ ? answer.trim() : null });
     setPurchasing(false);
     if (error) { toast.error(error.message); return; }
     await refresh();
-    toast.success("Pagamento concluído. Conteúdo entregue no Correio.");
-    navigate("/correio");
+    setAnswer("");
+    toast.success(needQ ? "Pagamento concluído. A sua resposta foi enviada ao ADM em Pedidos." : "Pagamento concluído. Conteúdo entregue no Correio.");
+    navigate(needQ ? "/pedidos" : "/correio");
   };
 
   const toggleWish = async () => {
@@ -203,11 +206,6 @@ const ProductDetail = () => {
                   <Button variant="outline" onClick={applyCode}>Aplicar</Button>
                 </div>
               )}
-              {needQ && session && (
-                <label className="block space-y-1 text-sm font-medium">{(product as any).buyer_question} *
-                  <textarea rows={3} maxLength={1000} value={answer} onChange={e => setAnswer(e.target.value)} placeholder="A sua resposta (obrigatória)" className="w-full rounded-lg border border-border bg-background p-2 text-sm font-normal" />
-                </label>
-              )}
               {pct > 0 && <p className="text-xs text-primary">Desconto de {pct}% aplicado</p>}
               <Button className="w-full" disabled={purchasing || soldOut || vbPrice <= 0} onClick={buyWithVb}>
                 {purchasing ? "A pagar..." : soldOut ? "Esgotado" : `Pagar com vb$ · ${formatVb(finalVb)}`}
@@ -269,6 +267,19 @@ const ProductDetail = () => {
           )}
         </section>
       </main>
+      {askOpen && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur grid place-items-center p-4" onClick={() => setAskOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-4 space-y-3" onClick={e => e.stopPropagation()}>
+            <h2 className="font-display font-semibold">Antes de pagar</h2>
+            <p className="text-sm whitespace-pre-wrap">{(product as any).buyer_question}</p>
+            <textarea autoFocus rows={4} maxLength={1000} value={answer} onChange={e => setAnswer(e.target.value)} placeholder="A sua resposta (obrigatória)" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setAskOpen(false)}>Cancelar</Button>
+              <Button className="flex-1" disabled={!answer.trim() || purchasing} onClick={buyWithVb}>{purchasing ? "A pagar..." : "Responder e pagar"}</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
