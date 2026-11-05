@@ -1,4 +1,6 @@
 # Current tasks
+- [ ] Enforce one active P2P purchase per buyer and preserve previous orders.
+- [ ] Show P2P receipts and seller approval/cancellation directly in chat; synchronize buyer, seller and ADM.
 - [ ] Verify ADM account list, public IDs, search/sort, financial history and real ban/unban with existing Cloud data.
 - [ ] Google-only sign-in for existing and new Google accounts with existing profiles.
 - [ ] Allow vb$ product purchases at 85 MZN per vb$ with atomic, unique ordered delivery to Correio.
