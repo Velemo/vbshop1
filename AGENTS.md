@@ -1,4 +1,5 @@
 # Project architecture
+- Enforce one active P2P order per buyer with a database uniqueness invariant and buyer-scoped transactional lock; synchronize existing chats, orders, offers and wallets through lifecycle-managed subscriptions so sellers can handle different buyers safely.
 - Read ADM user directory/history through admin-only RPCs over existing tables; change bans through the authenticated admin edge function and enforce auth bans in the Data API pre-request hook so existing JWTs cannot spend funds.
 
 - Keep the shared bottom navigation in `BottomNav` at the router level so shop, roulette, Correio, profile, and product pages expose consistent destinations.
