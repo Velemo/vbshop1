@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft, BadgeCheck, Send, ShieldAlert } from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { ArrowLeft, BadgeCheck, Send, ShieldAlert, UserRound } from "lucide-react";
 import VipBadge from "@/components/VipBadge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -246,8 +246,8 @@ function AdminOrderActions({ order, onChanged }: { order: Order; onChanged: () =
   return null;
 }
 
-function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; adminView: boolean; title: string; vip?: boolean; onBack?: () => void }) {
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+function ChatView({ userId, adminView, title, vip, avatarUrl, onBack }: { userId: string; adminView: boolean; title: string; vip?: boolean; avatarUrl?: string | null; onBack?: () => void }) {
+  const navigate = useNavigate();\n  const [msgs, setMsgs] = useState<Msg[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [text, setText] = useState("");
   const [orderRef, setOrderRef] = useState("");
@@ -293,8 +293,9 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
 
   return (
     <div className="flex min-h-0 flex-1 flex-col pb-28">
-      <div className="mb-2 flex items-center gap-2">
-        {onBack && <Button variant="outline" size="icon" onClick={onBack} aria-label="Voltar"><ArrowLeft size={17} /></Button>}
+      <div className="sticky top-0 z-30 -mx-3 mb-2 flex items-center gap-3 border-b border-border bg-background/95 px-3 py-3 backdrop-blur sm:-mx-5 sm:px-5">
+        <Button variant="outline" size="icon" onClick={onBack ?? (() => navigate(-1))} aria-label="Voltar"><ArrowLeft size={17} /></Button>
+        {avatarUrl ? <img src={avatarUrl} alt="" className="size-10 rounded-full object-cover" /> : <div className="grid size-10 place-items-center rounded-full bg-muted"><UserRound size={20} className="text-muted-foreground" /></div>}
         <p className="flex min-w-0 items-center gap-1 font-semibold"><span className="truncate">{title}</span>{vip && <VipBadge />}</p>
       </div>
 
@@ -319,18 +320,15 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
             </div>
           );
         })}
-        {orders.filter(isActiveP2POrder).map(o => (
-          <div key={o.id} className="pt-2">
-            <OrderCard order={o} side={o.buyer_id === userId ? "buyer" : "seller"} adminView={adminView} onChanged={() => void load()} />
-            {adminView && <AdminOrderActions order={o} onChanged={() => void load()} />}
+        {orders.map(o => (
+          <div key={o.id} className={`flex ${o.buyer_id === userId ? "justify-start" : "justify-end"}`}>
+            <div className={`w-full max-w-[88%] rounded-2xl border border-border p-3 ${o.buyer_id === userId ? "bg-card" : "bg-primary/5"}`}>
+              <p className="mb-1 text-xs font-semibold">{o.buyer_id === userId ? "Pedido enviado" : "Pedido recebido"} · {STATUS[o.status]?.label ?? o.status}</p>
+              <OrderCard order={o} side={o.buyer_id === userId ? "buyer" : "seller"} adminView={adminView} onChanged={() => void load()} />
+              {adminView && <AdminOrderActions order={o} onChanged={() => void load()} />}
+            </div>
           </div>
         ))}
-        {orders.some(o => !isActiveP2POrder(o)) && (
-          <details className="pt-2">
-            <summary className="cursor-pointer text-sm text-muted-foreground">Histórico P2P</summary>
-            <div className="mt-2 space-y-2">{orders.filter(o => !isActiveP2POrder(o)).map(o => <OrderCard key={o.id} order={o} side={o.buyer_id === userId ? "buyer" : "seller"} adminView={adminView} onChanged={() => void load()} />)}</div>
-          </details>
-        )}
         <div ref={endRef} />
       </div>
 
@@ -376,7 +374,7 @@ function AdminInbox() {
     return () => { supabase.removeChannel(ch); clearInterval(timer); };
   }, [load]);
 
-  if (sel) return <ChatView userId={sel.user_id} adminView title={sel.display_name} vip={sel.vip} onBack={() => { setSel(null); void load(); }} />;
+  if (sel) return <ChatView userId={sel.user_id} adminView title={sel.display_name} vip={sel.vip} avatarUrl={sel.avatar_url} onBack={() => { setSel(null); void load(); }} />;
 
   const s = q.trim().toLowerCase();
   const list = threads.filter(t => !s || t.display_name.toLowerCase().includes(s) || (t.user_code || "").toLowerCase().includes(s));
