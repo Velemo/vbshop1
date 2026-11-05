@@ -1,3 +1,5 @@
+// @refresh reset
+// Wallet hook changes must remount consumers rather than reuse an old hook queue.
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
