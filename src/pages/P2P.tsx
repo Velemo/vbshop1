@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { uploadWithProgress } from "@/lib/upload";
 import { toast } from "sonner";
+import { ACTIVE_P2P_STATUSES } from "@/lib/p2p-orders";
+import { useIsVip } from "@/hooks/useIsVip";
 
 type Offer = {
   id: string;
@@ -201,9 +203,16 @@ export default function P2P() {
   const [isVip, setIsVip] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [buying, setBuying] = useState<Offer | null>(null);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const vipActive = useIsVip();
 
   const load = useCallback(async () => {
-    const { data } = await (supabase as any).from("p2p_offers").select("*").order("created_at", { ascending: false });
+    const [{ data, error }, current] = await Promise.all([
+      supabase.from("p2p_offers").select("*").order("created_at", { ascending: false }),
+      session ? supabase.from("p2p_orders").select("id").eq("buyer_id", session.user.id).in("status", [...ACTIVE_P2P_STATUSES]).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    ]);
+    if (error || current.error) { toast.error("Não foi possível atualizar os pedidos P2P."); return; }
+    setActiveOrderId(current.data?.id ?? null);
     const all = (data || []) as Offer[];
     setOffers(all.filter(o => o.status === "active"));
     setMyOffers(all.filter(o => o.status === "active" && session && o.seller_id === session.user.id));
@@ -212,11 +221,18 @@ export default function P2P() {
 
   useEffect(() => {
     void load();
-    if (session) {
-      (supabase as any).from("vip_memberships").select("user_id").eq("user_id", session.user.id).maybeSingle()
-        .then(({ data }: any) => setIsVip(!!data));
-    }
   }, [session?.user.id, load]);
+  useEffect(() => { setIsVip(vipActive); }, [vipActive]);
+  useEffect(() => {
+    const channel = supabase.channel(`p2p-market-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "p2p_offers" }, () => { void load(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "p2p_orders" }, () => { void load(); })
+      .subscribe(() => { void load(); });
+    const onFocus = () => { void load(); };
+    window.addEventListener("focus", onFocus);
+    const timer = window.setInterval(() => { if (!document.hidden) void load(); }, 15000);
+    return () => { void supabase.removeChannel(channel); window.removeEventListener("focus", onFocus); clearInterval(timer); };
+  }, [load]);
 
   const cancelOffer = async (o: Offer) => {
     const { data, error } = await (supabase as any).rpc("p2p_cancel_offer", { _offer_id: o.id });
@@ -264,6 +280,7 @@ export default function P2P() {
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold">Ofertas disponíveis</h2>
+        {activeOrderId && <p className="mb-3 text-sm text-muted-foreground">Já tem um pedido ativo. <Link to="/pedidos" className="text-primary underline">Abrir conversa</Link></p>}
         {loading ? <p className="text-sm text-muted-foreground">A carregar ofertas...</p>
           : offers.length === 0 ? <div className="rounded-2xl border border-border p-5 text-sm text-muted-foreground">Ainda não existem ofertas disponíveis.</div>
           : <div className="space-y-3">
@@ -283,7 +300,7 @@ export default function P2P() {
                       {session && o.seller_id === session.user.id ? (
                         <p className="mt-3 text-xs text-muted-foreground">Esta é a sua oferta.</p>
                       ) : (
-                        <Button className="mt-3 w-full" onClick={() => setBuying(o)} disabled={available(o) <= 0}>{available(o) <= 0 ? "Esgotada" : "Comprar"}</Button>
+                        <Button className="mt-3 w-full" onClick={() => setBuying(o)} disabled={loading || !!activeOrderId || available(o) <= 0}>{available(o) <= 0 ? "Esgotada" : activeOrderId ? "Pedido ativo" : "Comprar"}</Button>
                       )}
                     </>
                   )}

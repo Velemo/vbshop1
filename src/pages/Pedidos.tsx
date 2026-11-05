@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft, BadgeCheck, MessageSquareText, Send, ShieldAlert } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Send, ShieldAlert } from "lucide-react";
 import VipBadge from "@/components/VipBadge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadWithProgress } from "@/lib/upload";
 import { formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
+import { isActiveP2POrder, uniqueP2POrders } from "@/lib/p2p-orders";
 
 type Order = {
   id: string;
@@ -109,7 +110,7 @@ function DisputeForm({ orderId, onDone }: { orderId: string; onDone: () => void 
   );
 }
 
-function OrderCard({ order, side, onChanged }: { order: Order; side: "buyer" | "seller"; onChanged: () => void }) {
+function OrderCard({ order, side, onChanged, adminView = false }: { order: Order; side: "buyer" | "seller"; onChanged: () => void; adminView?: boolean }) {
   const [showReceipt, setShowReceipt] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -148,7 +149,7 @@ function OrderCard({ order, side, onChanged }: { order: Order; side: "buyer" | "
       )}
 
       {/* Ações do comprador */}
-      {isBuyer && (
+      {isBuyer && !adminView && (
         <div className="mt-3 flex flex-wrap gap-2">
           {(order.status === "pending" || order.status === "rejected") && (
             <Button size="sm" onClick={() => { setShowReceipt(v => !v); setShowDispute(false); }}>
@@ -163,17 +164,15 @@ function OrderCard({ order, side, onChanged }: { order: Order; side: "buyer" | "
       )}
 
       {/* Ações do vendedor */}
-      {!isBuyer && (
+      {!isBuyer && !adminView && (
         <div className="mt-3 flex flex-wrap gap-2">
           {order.status === "receipt_sent" && (
             <>
-              <Button size="sm" onClick={() => void call("p2p_confirm_order", "Pagamento confirmado. vb$ enviados ao comprador.")} disabled={busy}>Confirmar pagamento</Button>
-              <Button size="sm" variant="outline" onClick={() => void call("p2p_reject_order", "Comprovativo recusado. O comprador pode reenviar.")} disabled={busy}>Recusar comprovativo</Button>
+              <Button size="sm" onClick={() => void call("p2p_confirm_order", "Pagamento confirmado. vb$ enviados ao comprador.")} disabled={busy}>Aprovar</Button>
+              <Button size="sm" variant="outline" onClick={() => void call("p2p_cancel_order", "Pedido cancelado.")} disabled={busy}>Cancelar</Button>
             </>
           )}
-          {["pending", "receipt_sent", "rejected"].includes(order.status) && (
-            <Button size="sm" variant="ghost" onClick={() => { setShowDispute(v => !v); }}>Comunicar problema</Button>
-          )}
+          {["pending", "rejected"].includes(order.status) && <Button size="sm" variant="outline" onClick={() => void call("p2p_cancel_order", "Pedido cancelado.")} disabled={busy}>Cancelar</Button>}
           {order.status === "pending" && <p className="text-xs text-muted-foreground">A aguardar o comprovativo do comprador.</p>}
         </div>
       )}
@@ -232,13 +231,13 @@ function AdminOrderActions({ order, onChanged }: { order: Order; onChanged: () =
   if (order.status === "receipt_sent") return (
     <div className="mt-2 flex flex-wrap gap-2">
       <Button size="sm" onClick={() => void call("p2p_confirm_order", { _order_id: order.id }, "Pedido aprovado.")} disabled={busy}>Aprovar</Button>
-      <Button size="sm" variant="outline" onClick={() => void call("p2p_reject_order", { _order_id: order.id }, "Pedido rejeitado.")} disabled={busy}>Rejeitar</Button>
+      <Button size="sm" variant="outline" onClick={() => void call("p2p_cancel_order", { _order_id: order.id }, "Pedido cancelado.")} disabled={busy}>Cancelar</Button>
     </div>
   );
   if (order.status === "disputed") return (
     <div className="mt-2 flex flex-wrap gap-2">
       <Button size="sm" onClick={() => void call("p2p_resolve_dispute", { _order_id: order.id, _release: true }, "vb$ libertados ao comprador.")} disabled={busy}>Aprovar (libertar vb$)</Button>
-      <Button size="sm" variant="outline" onClick={() => void call("p2p_resolve_dispute", { _order_id: order.id, _release: false }, "Pedido rejeitado e cancelado.")} disabled={busy}>Rejeitar</Button>
+      <Button size="sm" variant="outline" onClick={() => void call("p2p_resolve_dispute", { _order_id: order.id, _release: false }, "Pedido rejeitado e cancelado.")} disabled={busy}>Cancelar</Button>
     </div>
   );
   return null;
@@ -250,23 +249,31 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
   const [text, setText] = useState("");
   const [orderRef, setOrderRef] = useState("");
   const [sending, setSending] = useState(false);
-  const [showOrders, setShowOrders] = useState(false);
+  const loadVersion = useRef(0);
   const endRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
     const [m, o] = await Promise.all([
       (supabase as any).from("chat_messages").select("*").eq("user_id", userId).order("created_at", { ascending: true }).limit(500),
       (supabase as any).from("p2p_orders").select("*").or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order("created_at", { ascending: false }),
     ]);
-    setMsgs(m.data || []); setOrders(o.data || []);
+    if (version !== loadVersion.current) return;
+    if (m.error || o.error) { toast.error("Não foi possível atualizar a conversa."); return; }
+    setMsgs(m.data || []); setOrders(uniqueP2POrders((o.data || []) as Order[]));
   }, [userId]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     const ch = supabase.channel(`chat-${userId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `user_id=eq.${userId}` }, () => { void load(); })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .on("postgres_changes", { event: "*", schema: "public", table: "p2p_orders", filter: `buyer_id=eq.${userId}` }, () => { void load(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "p2p_orders", filter: `seller_id=eq.${userId}` }, () => { void load(); })
+      .subscribe(() => { void load(); });
+    const timer = window.setInterval(() => { if (!document.hidden) void load(); }, 15000);
+    const onFocus = () => { void load(); };
+    window.addEventListener("focus", onFocus);
+    return () => { loadVersion.current++; supabase.removeChannel(ch); clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [userId, load]);
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end" }); }, [msgs.length]);
 
@@ -284,22 +291,9 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-2 flex items-center gap-2">
-        {onBack && <button onClick={onBack} aria-label="Voltar" className="grid size-9 place-items-center rounded-full border border-border hover:bg-muted"><ArrowLeft size={17} /></button>}
+        {onBack && <Button variant="outline" size="icon" onClick={onBack} aria-label="Voltar"><ArrowLeft size={17} /></Button>}
         <p className="flex min-w-0 items-center gap-1 font-semibold"><span className="truncate">{title}</span>{vip && <VipBadge />}</p>
-        <Button size="sm" variant="outline" className="ml-auto" onClick={() => setShowOrders(v => !v)}>Pedidos ({orders.length})</Button>
       </div>
-
-      {showOrders && (
-        <div className="mb-3 max-h-[45vh] space-y-3 overflow-y-auto">
-          {orders.length === 0 && <p className="text-sm text-muted-foreground">Sem pedidos P2P. <Link to="/p2p" className="text-primary underline">Ver ofertas</Link></p>}
-          {orders.map(o => (
-            <div key={o.id}>
-              <OrderCard order={o} side={o.buyer_id === userId ? "buyer" : "seller"} onChanged={() => void load()} />
-              {adminView && <AdminOrderActions order={o} onChanged={() => void load()} />}
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="min-h-[40vh] flex-1 space-y-2 overflow-y-auto rounded-2xl border border-border bg-muted/20 p-3">
         {msgs.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Ainda não há mensagens. Escreva para {adminView ? "o utilizador" : "o ADM"}.</p>}
@@ -322,6 +316,18 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
             </div>
           );
         })}
+        {orders.filter(isActiveP2POrder).map(o => (
+          <div key={o.id} className="pt-2">
+            <OrderCard order={o} side={o.buyer_id === userId ? "buyer" : "seller"} adminView={adminView} onChanged={() => void load()} />
+            {adminView && <AdminOrderActions order={o} onChanged={() => void load()} />}
+          </div>
+        ))}
+        {orders.some(o => !isActiveP2POrder(o)) && (
+          <details className="pt-2">
+            <summary className="cursor-pointer text-sm text-muted-foreground">Histórico P2P</summary>
+            <div className="mt-2 space-y-2">{orders.filter(o => !isActiveP2POrder(o)).map(o => <OrderCard key={o.id} order={o} side={o.buyer_id === userId ? "buyer" : "seller"} adminView={adminView} onChanged={() => void load()} />)}</div>
+          </details>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -361,8 +367,10 @@ function AdminInbox() {
   useEffect(() => {
     const ch = supabase.channel(`admin-inbox-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, () => { void load(); })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .on("postgres_changes", { event: "*", schema: "public", table: "p2p_orders" }, () => { void load(); })
+      .subscribe(() => { void load(); });
+    const timer = window.setInterval(() => { if (!document.hidden) void load(); }, 15000);
+    return () => { supabase.removeChannel(ch); clearInterval(timer); };
   }, [load]);
 
   if (sel) return <ChatView userId={sel.user_id} adminView title={sel.display_name} vip={sel.vip} onBack={() => { setSel(null); void load(); }} />;
@@ -402,14 +410,6 @@ const Pedidos = () => {
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 pb-24 pt-3 sm:px-5">
-      <header className="mb-4 flex items-center gap-3">
-        <Link to="/perfil" aria-label="Voltar ao perfil" className="grid size-10 shrink-0 place-items-center rounded-full border border-border hover:bg-muted"><ArrowLeft size={19} /></Link>
-        <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary"><MessageSquareText size={23} /></div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold">Pedidos</h1>
-          <p className="text-sm text-muted-foreground">{isAdmin ? "Conversas com os utilizadores" : "Chat com o ADM · pedidos e P2P"}</p>
-        </div>
-      </header>
       {isAdmin ? <AdminInbox /> : <ChatView userId={session.user.id} adminView={false} title="ADM" />}
     </main>
   );
