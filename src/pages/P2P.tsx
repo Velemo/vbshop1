@@ -235,6 +235,13 @@ export default function P2P() {
   }, [load]);
 
   const cancelOffer = async (o: Offer) => {
+    const { data: open } = await supabase.from("p2p_orders").select("id,buyer_name,amount_vb,total_mt,status").eq("offer_id", o.id).in("status", [...ACTIVE_P2P_STATUSES]);
+    if (open && open.length > 0) {
+      const list = open.map((x: any) => `• ${x.buyer_name}: ${formatVb(Number(x.amount_vb))} (${fmtMt(Number(x.total_mt))} MT)`).join("\n");
+      window.alert(`Esta oferta tem negócios abertos:\n${list}\n\nAprove ou cancele estes pedidos em Pedidos antes de cancelar a oferta.`);
+      return;
+    }
+    if (!window.confirm("Tem a certeza que quer cancelar esta oferta?")) return;
     const { data, error } = await (supabase as any).rpc("p2p_cancel_offer", { _offer_id: o.id });
     if (error) { toast.error(error.message || "Não foi possível cancelar a oferta."); return; }
     toast.success(`Oferta cancelada. ${formatVb(Number(data))} devolvidos ao saldo.`);

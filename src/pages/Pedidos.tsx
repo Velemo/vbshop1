@@ -117,6 +117,7 @@ function OrderCard({ order, side, onChanged, adminView = false }: { order: Order
   const st = STATUS[order.status] ?? { label: order.status, className: "bg-muted text-muted-foreground" };
 
   const call = async (fn: string, msg: string) => {
+    if (!window.confirm(fn === "p2p_confirm_order" ? "Tem a certeza que quer APROVAR este pedido? As vb$ serão libertadas e o negócio fica fechado." : "Tem a certeza que quer CANCELAR este pedido? O negócio fica fechado.")) return;
     setBusy(true);
     const { error } = await (supabase as any).rpc(fn, { _order_id: order.id });
     setBusy(false);
@@ -222,6 +223,8 @@ type Thread = { user_id: string; display_name: string; avatar_url: string | null
 function AdminOrderActions({ order, onChanged }: { order: Order; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const call = async (fn: string, args: Record<string, unknown>, msg: string) => {
+    const approve = fn === "p2p_confirm_order" || args._release === true;
+    if (!window.confirm(approve ? "Tem a certeza que quer APROVAR este pedido? As vb$ serão libertadas e o negócio fica fechado." : "Tem a certeza que quer CANCELAR este pedido? O negócio fica fechado.")) return;
     setBusy(true);
     const { error } = await (supabase as any).rpc(fn, args);
     setBusy(false);
