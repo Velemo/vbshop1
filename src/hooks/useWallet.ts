@@ -17,5 +17,14 @@ export function useWallet() {
   }, [session]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    if (!session) return;
+    const channel = supabase.channel(`wallet-${session.user.id}-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "wallets", filter: `user_id=eq.${session.user.id}` }, () => { void refresh(); })
+      .subscribe();
+    const onFocus = () => { void refresh(); };
+    window.addEventListener("focus", onFocus);
+    return () => { void supabase.removeChannel(channel); window.removeEventListener("focus", onFocus); };
+  }, [session?.user.id, refresh]);
   return { balance, tickets, refresh };
 }
