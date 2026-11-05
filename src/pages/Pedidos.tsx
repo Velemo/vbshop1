@@ -289,7 +289,7 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
   const orderById = (id: string | null) => orders.find(o => o.id === id);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col pb-28">
       <div className="mb-2 flex items-center gap-2">
         {onBack && <Button variant="outline" size="icon" onClick={onBack} aria-label="Voltar"><ArrowLeft size={17} /></Button>}
         <p className="flex min-w-0 items-center gap-1 font-semibold"><span className="truncate">{title}</span>{vip && <VipBadge />}</p>
@@ -331,7 +331,7 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
         <div ref={endRef} />
       </div>
 
-      <div className="mt-2 space-y-2">
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 mx-auto w-full max-w-3xl space-y-2 border-t border-border bg-background/95 px-3 py-2 backdrop-blur sm:px-5">
         {orders.length > 0 && (
           <select value={orderRef} onChange={e => setOrderRef(e.target.value)} className="w-full rounded-lg border border-border bg-background p-2 text-sm">
             <option value="">Sem pedido associado</option>
