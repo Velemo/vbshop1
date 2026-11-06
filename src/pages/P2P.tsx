@@ -20,6 +20,8 @@ type Offer = {
   price_per_vb: number;
   mpesa_number: string | null;
   emola_number: string | null;
+  mpesa_name: string | null;
+  emola_name: string | null;
   status: string;
 };
 
@@ -29,7 +31,7 @@ const fmtMt = (n: number) => Number(n || 0).toLocaleString("pt-MZ", { minimumFra
 const methods = (o: Offer) => [o.mpesa_number ? "M-Pesa" : null, o.emola_number ? "e-Mola" : null].filter(Boolean) as string[];
 
 /* ---------- Painel de compra ---------- */
-function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
+function BuyPanel({ offer, minBuy, onDone }: { offer: Offer; minBuy: number; onDone: () => void }) {
   const navigate = useNavigate();
   const { session } = useAuth();
   const [qty, setQty] = useState("");
@@ -45,6 +47,7 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     if (!session) { navigate("/auth"); return; }
     const value = Number(qty);
     if (!Number.isFinite(value) || value <= 0) { toast.error("Indique a quantidade de vb$ que quer comprar."); return; }
+    if (minBuy > 0 && value < minBuy) { toast.error(`A compra mínima é de ${formatVb(minBuy)}.`); return; }
     if (value > available(offer)) { toast.error("Quantidade indisponível nesta oferta."); return; }
     setCreating(true);
     const { data, error } = await (supabase as any).rpc("p2p_create_order", { _offer_id: offer.id, _amount_vb: value });
@@ -90,7 +93,7 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     return (
       <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
         <p className="text-sm font-semibold">Comprar de {offer.seller_name}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Disponível: {formatVb(available(offer))} · {fmtMt(Number(offer.price_per_vb))} MT por vb$</p>
+        <p className="mt-1 text-xs text-muted-foreground">Disponível: {formatVb(available(offer))} · {fmtMt(Number(offer.price_per_vb))} MT por vb${minBuy > 0 ? ` · Mínimo ${formatVb(minBuy)}` : ""}</p>
         <div className="mt-3">
           <label htmlFor="p2p-qty" className="mb-1 block text-sm font-medium">Quantidade de vb$</label>
           <input id="p2p-qty" type="number" min="0.01" step="any" value={qty} onChange={e => setQty(e.target.value)} placeholder="Ex.: 5" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
@@ -109,8 +112,8 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
       <p className="text-sm font-semibold">Passo 2 · Pagamento ao vendedor</p>
       <p className="mt-1 text-sm">Total a pagar: <span className="font-bold">{fmtMt(order.total_mt)} MT</span> por {formatVb(Number(qty))}</p>
       <div className="mt-3 space-y-2 rounded-xl border border-border bg-background p-3 text-sm">
-        {offer.mpesa_number && <p><span className="font-semibold">M-Pesa:</span> {offer.mpesa_number}</p>}
-        {offer.emola_number && <p><span className="font-semibold">e-Mola:</span> {offer.emola_number}</p>}
+        {offer.mpesa_number && <p><span className="font-semibold">M-Pesa:</span> {offer.mpesa_number}{offer.mpesa_name ? ` — ${offer.mpesa_name}` : ""}</p>}
+        {offer.emola_number && <p><span className="font-semibold">e-Mola:</span> {offer.emola_number}{offer.emola_name ? ` — ${offer.emola_name}` : ""}</p>}
         <p className="text-xs text-muted-foreground">Transfira o valor exato e envie o comprovativo abaixo.</p>
       </div>
       <div className="mt-3">
@@ -137,13 +140,15 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
 }
 
 /* ---------- Formulário VIP de criação de oferta ---------- */
-function CreateOfferForm({ balance, onCreated }: { balance: number; onCreated: () => void }) {
+function CreateOfferForm({ balance, minPrice, onCreated }: { balance: number; minPrice: number; onCreated: () => void }) {
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
   const [mpesa, setMpesa] = useState(false);
   const [emola, setEmola] = useState(false);
   const [mpesaNumber, setMpesaNumber] = useState("");
   const [emolaNumber, setEmolaNumber] = useState("");
+  const [mpesaName, setMpesaName] = useState("");
+  const [emolaName, setEmolaName] = useState("");
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -151,12 +156,17 @@ function CreateOfferForm({ balance, onCreated }: { balance: number; onCreated: (
     if (!Number.isFinite(value) || value <= 0) { toast.error("Indique quantos vb$ quer vender."); return; }
     if (value > balance) { toast.error("Só pode vender até ao seu saldo disponível."); return; }
     if (!Number.isFinite(unit) || unit <= 0) { toast.error("Indique o preço de cada vb$ em meticais."); return; }
-    if (mpesa && !mpesaNumber.trim() && emola && !emolaNumber.trim()) { toast.error("Indique os números que vão receber os pagamentos."); return; }
+    if (minPrice > 0 && unit < minPrice) { toast.error(`O preço mínimo por vb$ definido pelo ADM é ${fmtMt(minPrice)} MT.`); return; }
     if (!mpesa && !emola) { toast.error("Escolha M-Pesa, e-Mola ou ambos."); return; }
+    if (mpesa && !mpesaNumber.trim()) { toast.error("Indique o número M-Pesa que recebe os pagamentos."); return; }
+    if (emola && !emolaNumber.trim()) { toast.error("Indique o número e-Mola que recebe os pagamentos."); return; }
+    if (mpesa && !mpesaName.trim()) { toast.error("Indique o nome responsável pelo número M-Pesa."); return; }
+    if (emola && !emolaName.trim()) { toast.error("Indique o nome responsável pelo número e-Mola."); return; }
     setSaving(true);
     const { error } = await (supabase as any).rpc("p2p_create_offer", {
       _amount_vb: value, _price_per_vb: unit,
       _mpesa_number: mpesa ? mpesaNumber.trim() : "", _emola_number: emola ? emolaNumber.trim() : "",
+      _mpesa_name: mpesa ? mpesaName.trim() : "", _emola_name: emola ? emolaName.trim() : "",
     });
     setSaving(false);
     if (error) { toast.error(error.message || "Não foi possível criar a oferta."); return; }
@@ -174,18 +184,28 @@ function CreateOfferForm({ balance, onCreated }: { balance: number; onCreated: (
           <input id="offer-amount" type="number" min="0.01" step="any" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Ex.: 20" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
         </div>
         <div>
-          <label htmlFor="offer-price" className="mb-1 block text-sm font-medium">Preço por vb$ (MT)</label>
+          <label htmlFor="offer-price" className="mb-1 block text-sm font-medium">Preço por vb$ (MT){minPrice > 0 ? ` · mínimo ${fmtMt(minPrice)} MT` : ""}</label>
           <input id="offer-price" type="number" min="0.01" step="any" value={price} onChange={e => setPrice(e.target.value)} placeholder="Ex.: 90" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
         </div>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <div className="rounded-xl border border-border p-3">
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={mpesa} onChange={e => setMpesa(e.target.checked)} /> M-Pesa</label>
-          {mpesa && <input value={mpesaNumber} onChange={e => setMpesaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-sm" />}
+          {mpesa && (
+            <div className="mt-2 space-y-2">
+              <input value={mpesaNumber} onChange={e => setMpesaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+              <input value={mpesaName} onChange={e => setMpesaName(e.target.value)} placeholder="Nome responsável pelo número" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-border p-3">
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={emola} onChange={e => setEmola(e.target.checked)} /> e-Mola</label>
-          {emola && <input value={emolaNumber} onChange={e => setEmolaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-sm" />}
+          {emola && (
+            <div className="mt-2 space-y-2">
+              <input value={emolaNumber} onChange={e => setEmolaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+              <input value={emolaName} onChange={e => setEmolaName(e.target.value)} placeholder="Nome responsável pelo número" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+            </div>
+          )}
         </div>
       </div>
       <Button className="mt-3 w-full" onClick={submit} disabled={saving}>{saving ? "A criar..." : "Publicar oferta"}</Button>
@@ -204,17 +224,29 @@ export default function P2P() {
   const [showCreate, setShowCreate] = useState(false);
   const [buying, setBuying] = useState<Offer | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [minBuy, setMinBuy] = useState(0);
+  const [minPrice, setMinPrice] = useState(0);
+  const [onlineSellers, setOnlineSellers] = useState<Set<string>>(new Set());
   const vipActive = useIsVip();
 
   const load = useCallback(async () => {
-    const [{ data, error }, current] = await Promise.all([
+    const [{ data, error }, current, settings, online] = await Promise.all([
       supabase.from("p2p_offers").select("*").order("created_at", { ascending: false }),
       session ? supabase.from("p2p_orders").select("id").eq("buyer_id", session.user.id).in("status", [...ACTIVE_P2P_STATUSES]).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      (supabase as any).from("p2p_settings").select("min_buy_vb,min_price_per_vb").eq("id", 1).maybeSingle(),
+      (supabase as any).rpc("p2p_online_sellers"),
     ]);
     if (error || current.error) { toast.error("Não foi possível atualizar os pedidos P2P."); return; }
     setActiveOrderId(current.data?.id ?? null);
+    setMinBuy(Number(settings.data?.min_buy_vb || 0));
+    setMinPrice(Number(settings.data?.min_price_per_vb || 0));
+    const onlineSet = new Set<string>((online.data || []) as string[]);
+    setOnlineSellers(onlineSet);
     const all = (data || []) as Offer[];
-    setOffers(all.filter(o => o.status === "active"));
+    const active = all.filter(o => o.status === "active");
+    // Ofertas de vendedores online no site aparecem primeiro.
+    active.sort((a, b) => Number(onlineSet.has(b.seller_id)) - Number(onlineSet.has(a.seller_id)));
+    setOffers(active);
     setMyOffers(all.filter(o => o.status === "active" && session && o.seller_id === session.user.id));
     setLoading(false);
   }, [session?.user.id]);
@@ -258,7 +290,7 @@ export default function P2P() {
           {showCreate ? (
             <div className="relative">
               <button type="button" onClick={() => setShowCreate(false)} aria-label="Fechar" className="absolute right-2 top-2 grid size-8 place-items-center rounded-full hover:bg-muted"><X size={16} /></button>
-              <CreateOfferForm balance={balance} onCreated={async () => { setShowCreate(false); await Promise.all([load(), refresh()]); }} />
+              <CreateOfferForm balance={balance} minPrice={minPrice} onCreated={async () => { setShowCreate(false); await Promise.all([load(), refresh()]); }} />
             </div>
           ) : (
             <Button className="w-full" onClick={() => setShowCreate(true)}>Criar oferta de venda</Button>
@@ -293,12 +325,15 @@ export default function P2P() {
           : <div className="space-y-3">
               {offers.map(o => (
                 <article key={o.id} className="rounded-2xl border border-border p-4">
-                  {buying?.id === o.id ? <BuyPanel offer={o} onDone={async () => { setBuying(null); await load(); }} /> : (
+                  {buying?.id === o.id ? <BuyPanel offer={o} minBuy={minBuy} onDone={async () => { setBuying(null); await load(); }} /> : (
                     <>
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold">{formatVb(available(o))} disponíveis</p>
-                          <p className="text-sm text-muted-foreground">{fmtMt(Number(o.price_per_vb))} MT por vb$ · {o.seller_name}</p>
+                          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            {fmtMt(Number(o.price_per_vb))} MT por vb$ · {o.seller_name}
+                            {onlineSellers.has(o.seller_id) && <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-600"><span className="size-1.5 rounded-full bg-green-500" />Online</span>}
+                          </p>
                         </div>
                         <div className="flex gap-1">
                           {methods(o).map(m => <span key={m} className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{m}</span>)}

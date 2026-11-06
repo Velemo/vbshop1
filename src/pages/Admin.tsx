@@ -13,7 +13,7 @@ import { filterAndSortUsers, type AdminUser, type UserSort } from "@/lib/admin-u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
-type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes";
+type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes" | "p2p";
 type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
@@ -105,6 +105,29 @@ const Admin = () => {
   const [broadcastPlaying, setBroadcastPlaying] = useState(false);
   const [musicBusy, setMusicBusy] = useState(false);
   const [musicProgress, setMusicProgress] = useState(0);
+  const [p2pMinBuy, setP2pMinBuy] = useState("0");
+  const [p2pMinPrice, setP2pMinPrice] = useState("0");
+  const [p2pSaving, setP2pSaving] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "p2p") return;
+    (supabase as any).from("p2p_settings").select("min_buy_vb,min_price_per_vb").eq("id", 1).maybeSingle()
+      .then(({ data }: any) => {
+        if (data) { setP2pMinBuy(String(data.min_buy_vb)); setP2pMinPrice(String(data.min_price_per_vb)); }
+      });
+  }, [tab]);
+
+  const saveP2pSettings = async () => {
+    const minBuy = Number(p2pMinBuy), minPrice = Number(p2pMinPrice);
+    if (!Number.isFinite(minBuy) || minBuy < 0 || !Number.isFinite(minPrice) || minPrice < 0) {
+      toast.error("Indique valores válidos (0 ou mais)."); return;
+    }
+    setP2pSaving(true);
+    const { error } = await (supabase as any).from("p2p_settings").upsert({ id: 1, min_buy_vb: minBuy, min_price_per_vb: minPrice, updated_at: new Date().toISOString() });
+    setP2pSaving(false);
+    if (error) { toast.error(error.message || "Não foi possível guardar as regras."); return; }
+    toast.success("Regras P2P guardadas.");
+  };
 
   const uploadImage = async (file: File, label = "A carregar"): Promise<string | null> => {
     setProgress({ label: `${label}: ${file.name}`, percent: 0 });
@@ -487,10 +510,10 @@ const Admin = () => {
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
-          {(["products", "users", "visits", "ad", "roleta", "codes"] as Tab[]).map(t => (
+          {(["products", "users", "visits", "ad", "roleta", "codes", "p2p"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3 py-2.5 text-sm whitespace-nowrap font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {({ products: "Produtos", users: "Utilizadores", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$" } as Record<Tab, string>)[t]}
+              {({ products: "Produtos", users: "Utilizadores", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$", p2p: "P2P" } as Record<Tab, string>)[t]}
             </button>
           ))}
         </div>
@@ -756,6 +779,31 @@ const Admin = () => {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {tab === "p2p" && (
+          <div className="max-w-lg space-y-4">
+            <div>
+              <h2 className="font-semibold">Regras do mercado P2P</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Estas regras aplicam-se imediatamente a novas ofertas e pedidos. Use 0 para desativar cada limite.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Compra mínima por pedido (vb$)</label>
+              <input type="number" min="0" step="0.01" value={p2pMinBuy} onChange={e => setP2pMinBuy(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
+              <p className="text-xs text-muted-foreground">O comprador não pode reservar menos do que esta quantidade de vb$.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Preço mínimo por vb$ (MT)</label>
+              <input type="number" min="0" step="0.01" value={p2pMinPrice} onChange={e => setP2pMinPrice(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
+              <p className="text-xs text-muted-foreground">O vendedor VIP não pode anunciar vb$ abaixo deste preço em meticais.</p>
+            </div>
+            <button onClick={saveP2pSettings} disabled={p2pSaving}
+              className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60">
+              {p2pSaving ? "A guardar..." : "Guardar regras"}
+            </button>
           </div>
         )}
       </main>

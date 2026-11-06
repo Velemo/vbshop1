@@ -246,7 +246,7 @@ function AdminOrderActions({ order, onChanged }: { order: Order; onChanged: () =
   return null;
 }
 
-function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; adminView: boolean; title: string; vip?: boolean; onBack?: () => void }) {
+function ChatView({ userId, adminView, title, vip, avatar, onBack }: { userId: string; adminView: boolean; title: string; vip?: boolean; avatar?: string | null; onBack?: () => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [text, setText] = useState("");
@@ -293,8 +293,9 @@ function ChatView({ userId, adminView, title, vip, onBack }: { userId: string; a
 
   return (
     <div className="flex min-h-0 flex-1 flex-col pb-28">
-      <div className="mb-2 flex items-center gap-2">
+      <div className="sticky top-0 z-30 -mx-3 mb-2 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur sm:-mx-5 sm:px-5">
         {onBack && <Button variant="outline" size="icon" onClick={onBack} aria-label="Voltar"><ArrowLeft size={17} /></Button>}
+        {avatar ? <img src={avatar} alt="" className="size-9 shrink-0 rounded-full object-cover" /> : <div className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 font-semibold text-primary">{title[0]}</div>}
         <p className="flex min-w-0 items-center gap-1 font-semibold"><span className="truncate">{title}</span>{vip && <VipBadge />}</p>
       </div>
 
@@ -376,7 +377,7 @@ function AdminInbox() {
     return () => { supabase.removeChannel(ch); clearInterval(timer); };
   }, [load]);
 
-  if (sel) return <ChatView userId={sel.user_id} adminView title={sel.display_name} vip={sel.vip} onBack={() => { setSel(null); void load(); }} />;
+  if (sel) return <ChatView userId={sel.user_id} adminView title={sel.display_name} vip={sel.vip} avatar={sel.avatar_url} onBack={() => { setSel(null); void load(); }} />;
 
   const s = q.trim().toLowerCase();
   const list = threads.filter(t => !s || t.display_name.toLowerCase().includes(s) || (t.user_code || "").toLowerCase().includes(s));
