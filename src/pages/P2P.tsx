@@ -20,6 +20,8 @@ type Offer = {
   price_per_vb: number;
   mpesa_number: string | null;
   emola_number: string | null;
+  mpesa_name: string | null;
+  emola_name: string | null;
   status: string;
 };
 
