@@ -85,6 +85,13 @@
       "when": 1793843479921,
       "tag": "0011_p2p_legacy_rejection_cancels",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793933888000,
+      "tag": "0012_p2p_rules_names_online",
+      "breakpoints": true
     }
   ]
 }

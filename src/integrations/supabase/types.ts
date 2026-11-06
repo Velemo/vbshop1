@@ -158,8 +158,10 @@ export type Database = {
         Row: {
           amount_vb: number
           created_at: string
+          emola_name: string | null
           emola_number: string | null
           id: string
+          mpesa_name: string | null
           mpesa_number: string | null
           price_per_vb: number
           reserved_vb: number
@@ -172,8 +174,10 @@ export type Database = {
         Insert: {
           amount_vb: number
           created_at?: string
+          emola_name?: string | null
           emola_number?: string | null
           id?: string
+          mpesa_name?: string | null
           mpesa_number?: string | null
           price_per_vb: number
           reserved_vb?: number
@@ -186,8 +190,10 @@ export type Database = {
         Update: {
           amount_vb?: number
           created_at?: string
+          emola_name?: string | null
           emola_number?: string | null
           id?: string
+          mpesa_name?: string | null
           mpesa_number?: string | null
           price_per_vb?: number
           reserved_vb?: number
@@ -257,6 +263,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      p2p_settings: {
+        Row: {
+          id: number
+          min_buy_vb: number
+          min_price_per_vb: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          min_buy_vb?: number
+          min_price_per_vb?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          min_buy_vb?: number
+          min_price_per_vb?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       prize_mail: {
         Row: {
@@ -1065,7 +1092,9 @@ export type Database = {
       p2p_create_offer: {
         Args: {
           _amount_vb: number
+          _emola_name?: string
           _emola_number: string
+          _mpesa_name?: string
           _mpesa_number: string
           _price_per_vb: number
         }
@@ -1075,6 +1104,7 @@ export type Database = {
         Args: { _amount_vb: number; _offer_id: string }
         Returns: string
       }
+      p2p_online_sellers: { Args: never; Returns: string[] }
       p2p_reject_order: { Args: { _order_id: string }; Returns: undefined }
       p2p_report_dispute: {
         Args: { _order_id: string; _reason: string }
