@@ -140,13 +140,15 @@ function BuyPanel({ offer, minBuy, onDone }: { offer: Offer; minBuy: number; onD
 }
 
 /* ---------- Formulário VIP de criação de oferta ---------- */
-function CreateOfferForm({ balance, onCreated }: { balance: number; onCreated: () => void }) {
+function CreateOfferForm({ balance, minPrice, onCreated }: { balance: number; minPrice: number; onCreated: () => void }) {
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
   const [mpesa, setMpesa] = useState(false);
   const [emola, setEmola] = useState(false);
   const [mpesaNumber, setMpesaNumber] = useState("");
   const [emolaNumber, setEmolaNumber] = useState("");
+  const [mpesaName, setMpesaName] = useState("");
+  const [emolaName, setEmolaName] = useState("");
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -154,12 +156,17 @@ function CreateOfferForm({ balance, onCreated }: { balance: number; onCreated: (
     if (!Number.isFinite(value) || value <= 0) { toast.error("Indique quantos vb$ quer vender."); return; }
     if (value > balance) { toast.error("Só pode vender até ao seu saldo disponível."); return; }
     if (!Number.isFinite(unit) || unit <= 0) { toast.error("Indique o preço de cada vb$ em meticais."); return; }
-    if (mpesa && !mpesaNumber.trim() && emola && !emolaNumber.trim()) { toast.error("Indique os números que vão receber os pagamentos."); return; }
+    if (minPrice > 0 && unit < minPrice) { toast.error(`O preço mínimo por vb$ definido pelo ADM é ${fmtMt(minPrice)} MT.`); return; }
     if (!mpesa && !emola) { toast.error("Escolha M-Pesa, e-Mola ou ambos."); return; }
+    if (mpesa && !mpesaNumber.trim()) { toast.error("Indique o número M-Pesa que recebe os pagamentos."); return; }
+    if (emola && !emolaNumber.trim()) { toast.error("Indique o número e-Mola que recebe os pagamentos."); return; }
+    if (mpesa && !mpesaName.trim()) { toast.error("Indique o nome responsável pelo número M-Pesa."); return; }
+    if (emola && !emolaName.trim()) { toast.error("Indique o nome responsável pelo número e-Mola."); return; }
     setSaving(true);
     const { error } = await (supabase as any).rpc("p2p_create_offer", {
       _amount_vb: value, _price_per_vb: unit,
       _mpesa_number: mpesa ? mpesaNumber.trim() : "", _emola_number: emola ? emolaNumber.trim() : "",
+      _mpesa_name: mpesa ? mpesaName.trim() : "", _emola_name: emola ? emolaName.trim() : "",
     });
     setSaving(false);
     if (error) { toast.error(error.message || "Não foi possível criar a oferta."); return; }
@@ -177,18 +184,28 @@ function CreateOfferForm({ balance, onCreated }: { balance: number; onCreated: (
           <input id="offer-amount" type="number" min="0.01" step="any" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Ex.: 20" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
         </div>
         <div>
-          <label htmlFor="offer-price" className="mb-1 block text-sm font-medium">Preço por vb$ (MT)</label>
+          <label htmlFor="offer-price" className="mb-1 block text-sm font-medium">Preço por vb$ (MT){minPrice > 0 ? ` · mínimo ${fmtMt(minPrice)} MT` : ""}</label>
           <input id="offer-price" type="number" min="0.01" step="any" value={price} onChange={e => setPrice(e.target.value)} placeholder="Ex.: 90" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
         </div>
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <div className="rounded-xl border border-border p-3">
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={mpesa} onChange={e => setMpesa(e.target.checked)} /> M-Pesa</label>
-          {mpesa && <input value={mpesaNumber} onChange={e => setMpesaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-sm" />}
+          {mpesa && (
+            <div className="mt-2 space-y-2">
+              <input value={mpesaNumber} onChange={e => setMpesaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+              <input value={mpesaName} onChange={e => setMpesaName(e.target.value)} placeholder="Nome responsável pelo número" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-border p-3">
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={emola} onChange={e => setEmola(e.target.checked)} /> e-Mola</label>
-          {emola && <input value={emolaNumber} onChange={e => setEmolaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="mt-2 w-full rounded-lg border border-border bg-background p-2 text-sm" />}
+          {emola && (
+            <div className="mt-2 space-y-2">
+              <input value={emolaNumber} onChange={e => setEmolaNumber(e.target.value)} placeholder="Número que recebe o pagamento" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+              <input value={emolaName} onChange={e => setEmolaName(e.target.value)} placeholder="Nome responsável pelo número" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
+            </div>
+          )}
         </div>
       </div>
       <Button className="mt-3 w-full" onClick={submit} disabled={saving}>{saving ? "A criar..." : "Publicar oferta"}</Button>
