@@ -781,6 +781,31 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {tab === "p2p" && (
+          <div className="max-w-lg space-y-4">
+            <div>
+              <h2 className="font-semibold">Regras do mercado P2P</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Estas regras aplicam-se imediatamente a novas ofertas e pedidos. Use 0 para desativar cada limite.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Compra mínima por pedido (vb$)</label>
+              <input type="number" min="0" step="0.01" value={p2pMinBuy} onChange={e => setP2pMinBuy(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
+              <p className="text-xs text-muted-foreground">O comprador não pode reservar menos do que esta quantidade de vb$.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Preço mínimo por vb$ (MT)</label>
+              <input type="number" min="0" step="0.01" value={p2pMinPrice} onChange={e => setP2pMinPrice(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-background border border-border text-sm" />
+              <p className="text-xs text-muted-foreground">O vendedor VIP não pode anunciar vb$ abaixo deste preço em meticais.</p>
+            </div>
+            <button onClick={saveP2pSettings} disabled={p2pSaving}
+              className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-60">
+              {p2pSaving ? "A guardar..." : "Guardar regras"}
+            </button>
+          </div>
+        )}
       </main>
 
       {progress && (
