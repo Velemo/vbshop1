@@ -224,17 +224,29 @@ export default function P2P() {
   const [showCreate, setShowCreate] = useState(false);
   const [buying, setBuying] = useState<Offer | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [minBuy, setMinBuy] = useState(0);
+  const [minPrice, setMinPrice] = useState(0);
+  const [onlineSellers, setOnlineSellers] = useState<Set<string>>(new Set());
   const vipActive = useIsVip();
 
   const load = useCallback(async () => {
-    const [{ data, error }, current] = await Promise.all([
+    const [{ data, error }, current, settings, online] = await Promise.all([
       supabase.from("p2p_offers").select("*").order("created_at", { ascending: false }),
       session ? supabase.from("p2p_orders").select("id").eq("buyer_id", session.user.id).in("status", [...ACTIVE_P2P_STATUSES]).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      (supabase as any).from("p2p_settings").select("min_buy_vb,min_price_per_vb").eq("id", 1).maybeSingle(),
+      (supabase as any).rpc("p2p_online_sellers"),
     ]);
     if (error || current.error) { toast.error("Não foi possível atualizar os pedidos P2P."); return; }
     setActiveOrderId(current.data?.id ?? null);
+    setMinBuy(Number(settings.data?.min_buy_vb || 0));
+    setMinPrice(Number(settings.data?.min_price_per_vb || 0));
+    const onlineSet = new Set<string>((online.data || []) as string[]);
+    setOnlineSellers(onlineSet);
     const all = (data || []) as Offer[];
-    setOffers(all.filter(o => o.status === "active"));
+    const active = all.filter(o => o.status === "active");
+    // Ofertas de vendedores online no site aparecem primeiro.
+    active.sort((a, b) => Number(onlineSet.has(b.seller_id)) - Number(onlineSet.has(a.seller_id)));
+    setOffers(active);
     setMyOffers(all.filter(o => o.status === "active" && session && o.seller_id === session.user.id));
     setLoading(false);
   }, [session?.user.id]);
@@ -278,7 +290,7 @@ export default function P2P() {
           {showCreate ? (
             <div className="relative">
               <button type="button" onClick={() => setShowCreate(false)} aria-label="Fechar" className="absolute right-2 top-2 grid size-8 place-items-center rounded-full hover:bg-muted"><X size={16} /></button>
-              <CreateOfferForm balance={balance} onCreated={async () => { setShowCreate(false); await Promise.all([load(), refresh()]); }} />
+              <CreateOfferForm balance={balance} minPrice={minPrice} onCreated={async () => { setShowCreate(false); await Promise.all([load(), refresh()]); }} />
             </div>
           ) : (
             <Button className="w-full" onClick={() => setShowCreate(true)}>Criar oferta de venda</Button>
@@ -313,12 +325,15 @@ export default function P2P() {
           : <div className="space-y-3">
               {offers.map(o => (
                 <article key={o.id} className="rounded-2xl border border-border p-4">
-                  {buying?.id === o.id ? <BuyPanel offer={o} onDone={async () => { setBuying(null); await load(); }} /> : (
+                  {buying?.id === o.id ? <BuyPanel offer={o} minBuy={minBuy} onDone={async () => { setBuying(null); await load(); }} /> : (
                     <>
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold">{formatVb(available(o))} disponíveis</p>
-                          <p className="text-sm text-muted-foreground">{fmtMt(Number(o.price_per_vb))} MT por vb$ · {o.seller_name}</p>
+                          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            {fmtMt(Number(o.price_per_vb))} MT por vb$ · {o.seller_name}
+                            {onlineSellers.has(o.seller_id) && <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-600"><span className="size-1.5 rounded-full bg-green-500" />Online</span>}
+                          </p>
                         </div>
                         <div className="flex gap-1">
                           {methods(o).map(m => <span key={m} className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{m}</span>)}
