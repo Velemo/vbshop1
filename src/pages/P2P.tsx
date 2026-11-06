@@ -31,7 +31,7 @@ const fmtMt = (n: number) => Number(n || 0).toLocaleString("pt-MZ", { minimumFra
 const methods = (o: Offer) => [o.mpesa_number ? "M-Pesa" : null, o.emola_number ? "e-Mola" : null].filter(Boolean) as string[];
 
 /* ---------- Painel de compra ---------- */
-function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
+function BuyPanel({ offer, minBuy, onDone }: { offer: Offer; minBuy: number; onDone: () => void }) {
   const navigate = useNavigate();
   const { session } = useAuth();
   const [qty, setQty] = useState("");
@@ -47,6 +47,7 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     if (!session) { navigate("/auth"); return; }
     const value = Number(qty);
     if (!Number.isFinite(value) || value <= 0) { toast.error("Indique a quantidade de vb$ que quer comprar."); return; }
+    if (minBuy > 0 && value < minBuy) { toast.error(`A compra mínima é de ${formatVb(minBuy)}.`); return; }
     if (value > available(offer)) { toast.error("Quantidade indisponível nesta oferta."); return; }
     setCreating(true);
     const { data, error } = await (supabase as any).rpc("p2p_create_order", { _offer_id: offer.id, _amount_vb: value });
@@ -92,7 +93,7 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     return (
       <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
         <p className="text-sm font-semibold">Comprar de {offer.seller_name}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Disponível: {formatVb(available(offer))} · {fmtMt(Number(offer.price_per_vb))} MT por vb$</p>
+        <p className="mt-1 text-xs text-muted-foreground">Disponível: {formatVb(available(offer))} · {fmtMt(Number(offer.price_per_vb))} MT por vb${minBuy > 0 ? ` · Mínimo ${formatVb(minBuy)}` : ""}</p>
         <div className="mt-3">
           <label htmlFor="p2p-qty" className="mb-1 block text-sm font-medium">Quantidade de vb$</label>
           <input id="p2p-qty" type="number" min="0.01" step="any" value={qty} onChange={e => setQty(e.target.value)} placeholder="Ex.: 5" className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
@@ -111,8 +112,8 @@ function BuyPanel({ offer, onDone }: { offer: Offer; onDone: () => void }) {
       <p className="text-sm font-semibold">Passo 2 · Pagamento ao vendedor</p>
       <p className="mt-1 text-sm">Total a pagar: <span className="font-bold">{fmtMt(order.total_mt)} MT</span> por {formatVb(Number(qty))}</p>
       <div className="mt-3 space-y-2 rounded-xl border border-border bg-background p-3 text-sm">
-        {offer.mpesa_number && <p><span className="font-semibold">M-Pesa:</span> {offer.mpesa_number}</p>}
-        {offer.emola_number && <p><span className="font-semibold">e-Mola:</span> {offer.emola_number}</p>}
+        {offer.mpesa_number && <p><span className="font-semibold">M-Pesa:</span> {offer.mpesa_number}{offer.mpesa_name ? ` — ${offer.mpesa_name}` : ""}</p>}
+        {offer.emola_number && <p><span className="font-semibold">e-Mola:</span> {offer.emola_number}{offer.emola_name ? ` — ${offer.emola_name}` : ""}</p>}
         <p className="text-xs text-muted-foreground">Transfira o valor exato e envie o comprovativo abaixo.</p>
       </div>
       <div className="mt-3">
