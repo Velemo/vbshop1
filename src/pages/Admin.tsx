@@ -9,11 +9,13 @@ import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import RouletteAdmin from "@/components/admin/RouletteAdmin";
+import AdminHome, { adminFunctions, type AdminTab } from "@/components/admin/AdminHome";
+import SiteWalletAdmin from "@/components/admin/SiteWalletAdmin";
 import { filterAndSortUsers, type AdminUser, type UserSort } from "@/lib/admin-users";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
-type Tab = "products" | "users" | "visits" | "ad" | "roleta" | "codes" | "p2p";
+type Tab = AdminTab;
 type UserHistory = { event_type: string; description: string; amount: number | null; event_at: string };
 type Slot = { position: number; image_url: string | null; label: string };
 type PrizeContent = { position: number; prize_text: string; prize_link: string; prize_video_url: string };
@@ -62,7 +64,7 @@ const productMedia = (f: ProductForm) => [f.image_url, ...f.gallery].filter(Bool
 
 const Admin = () => {
   const { user: currentUser } = useAuth();
-  const [tab, setTab] = useState<Tab>("products");
+  const [tab, setTab] = useState<Tab | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [userSearch, setUserSearch] = useState("");
@@ -506,20 +508,22 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 bg-background/85 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-secondary"><ArrowLeft size={18}/></Link>
+          {tab ? <Button variant="ghost" size="icon" aria-label="Voltar às funções" onClick={() => setTab(null)}><ArrowLeft size={18}/></Button> : <Button asChild variant="ghost" size="icon" aria-label="Voltar à loja"><Link to="/"><ArrowLeft size={18}/></Link></Button>}
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
-        <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
-          {(["products", "users", "visits", "ad", "roleta", "codes", "p2p"] as Tab[]).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-3 py-2.5 text-sm whitespace-nowrap font-medium border-b-2 ${tab===t?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {({ products: "Produtos", users: "Utilizadores", visits: "Visitantes", ad: "Anúncio", roleta: "Roleta", codes: "Códigos vb$", p2p: "P2P" } as Record<Tab, string>)[t]}
-            </button>
+        {tab && <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
+          {adminFunctions.map(({ id, label }) => (
+            <Button key={id} variant="ghost" onClick={() => setTab(id)}
+              className={`shrink-0 rounded-none px-3 py-2.5 text-sm font-medium border-b-2 ${tab===id?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
+              {label}
+            </Button>
           ))}
-        </div>
+        </div>}
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6">
+        {!tab && <AdminHome onSelect={setTab} onMusic={() => setMusicPanelOpen(true)} />}
+        {tab === "wallet" && <SiteWalletAdmin />}
         {tab === "products" && (
           <>
             <div className="flex justify-between items-center mb-4">

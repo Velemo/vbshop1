@@ -562,6 +562,7 @@ export type Database = {
           code: string
           created_at: string
           expires_at: string | null
+          funding_source: string
           id: string
           redeemed_at: string | null
           redeemed_by: string | null
@@ -571,6 +572,7 @@ export type Database = {
           code: string
           created_at?: string
           expires_at?: string | null
+          funding_source?: string
           id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
@@ -580,6 +582,7 @@ export type Database = {
           code?: string
           created_at?: string
           expires_at?: string | null
+          funding_source?: string
           id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
@@ -832,6 +835,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_wallet_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          kind: string
+          source_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          kind: string
+          source_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: string
+          source_id?: string
+        }
+        Relationships: []
+      }
       user_contacts: {
         Row: {
           created_at: string
@@ -1000,6 +1030,10 @@ export type Database = {
           vip: boolean
         }[]
       }
+      admin_generate_site_recharge: {
+        Args: { _amount: number; _expires_at?: string }
+        Returns: string
+      }
       admin_list_users: {
         Args: never
         Returns: {
@@ -1031,6 +1065,7 @@ export type Database = {
           wins_total: number
         }[]
       }
+      admin_site_wallet_summary: { Args: never; Returns: Json }
       admin_user_history: {
         Args: { _user_id: string }
         Returns: {
@@ -1078,6 +1113,14 @@ export type Database = {
         Returns: boolean
       }
       is_vip: { Args: { _user_id: string }; Returns: boolean }
+      lookup_transfer_recipient: {
+        Args: { _code: string }
+        Returns: {
+          display_name: string
+          user_code: string
+          user_id: string
+        }[]
+      }
       notify_admins: {
         Args: { _body: string; _title: string; _url: string }
         Returns: undefined

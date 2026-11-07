@@ -92,6 +92,13 @@
       "when": 1793933888000,
       "tag": "0012_p2p_rules_names_online",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794013049574,
+      "tag": "0013_site_treasury_and_recipient_lookup",
+      "breakpoints": true
     }
   ]
 }

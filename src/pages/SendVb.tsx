@@ -6,14 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWallet, formatVb } from "@/hooks/useWallet";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { readRecipient } from "@/lib/recipient";
 export default function SendVb() {
  const {session}=useAuth(); const {balance,refresh}=useWallet(); const navigate=useNavigate();
  const [recipient,setRecipient]=useState(""); const [amount,setAmount]=useState(""); const [sending,setSending]=useState(false); const [recipientInfo,setRecipientInfo]=useState<{user_id:string;display_name:string;user_code:string}|null>(null); const [confirmOpen,setConfirmOpen]=useState(false);
  const submit=async()=>{if(!session){navigate("/auth");return;} const value=Number(amount);
  if(!recipient.trim()){toast.error("Introduza o ID do destinatário.");return;}
  if(!Number.isFinite(value)||value<=0||value>balance){toast.error("Valor inválido ou saldo insuficiente.");return;}
- const {data,error}=await (supabase as any).from("profiles").select("user_id,display_name,user_code").eq("user_code",recipient.trim()).maybeSingle();
- if(error||!data){toast.error("ID de utilizador não encontrado.");return;}
+  const {data:rows,error}=await supabase.rpc("lookup_transfer_recipient",{_code:recipient.trim()});
+  const data=readRecipient(rows);
+  if(error||!data){toast.error(error?.message || "Destinatário não encontrado ou sem nome disponível.");return;}
  if(data.user_id===session.user.id){toast.error("Não pode enviar vb$ para si mesmo.");return;}
  setRecipientInfo(data);setConfirmOpen(true);
  };
