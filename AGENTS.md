@@ -9,3 +9,6 @@
 - Store product video URLs alongside image URLs in the existing gallery and render media according to URL type so existing products stay compatible.
 - Keep the router's bottom navigation in a separate flex row below a scrollable content viewport so no page can overlap it.
 - Process vb$ purchases and consume ordered one-time product content in a single security-definer transaction, then show owner-only delivery snapshots in Correio; client code never debits wallets directly.
+- Record site treasury payments from immutable delivery snapshots and debit funded recharge codes at creation through an append-only, admin-only ledger with transactional serialization; keep external recharge issuance separate to preserve existing operations.
+- Resolve transfer recipients through an authenticated exact-public-ID RPC exposing only the recipient ID and name, because profiles are owner-only.
+- Keep initial ADM navigation in a function grid and its operational views intact; persist appearance independently from animation mode in the shared settings provider.
