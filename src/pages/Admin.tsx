@@ -9,7 +9,7 @@ import { isVideo } from "@/lib/media";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import RouletteAdmin from "@/components/admin/RouletteAdmin";
-import AdminHome, { adminFunctions, type AdminTab } from "@/components/admin/AdminHome";
+import AdminHome, { type AdminTab } from "@/components/admin/AdminHome";
 import SiteWalletAdmin from "@/components/admin/SiteWalletAdmin";
 import { filterAndSortUsers, type AdminUser, type UserSort } from "@/lib/admin-users";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -511,17 +511,9 @@ const Admin = () => {
           {tab ? <Button variant="ghost" size="icon" aria-label="Voltar às funções" onClick={() => setTab(null)}><ArrowLeft size={18}/></Button> : <Button asChild variant="ghost" size="icon" aria-label="Voltar à loja"><Link to="/"><ArrowLeft size={18}/></Link></Button>}
           <h1 className="font-display font-semibold">Painel Admin</h1>
         </div>
-        {tab && <div className="max-w-6xl mx-auto px-4 flex gap-1 border-t border-border overflow-x-auto">
-          {adminFunctions.map(({ id, label }) => (
-            <Button key={id} variant="ghost" onClick={() => setTab(id)}
-              className={`shrink-0 rounded-none px-3 py-2.5 text-sm font-medium border-b-2 ${tab===id?"border-primary text-foreground":"border-transparent text-muted-foreground"}`}>
-              {label}
-            </Button>
-          ))}
-        </div>}
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className={tab ? "w-full px-4 py-6" : "max-w-6xl mx-auto px-4 py-6"}>
         {!tab && <AdminHome onSelect={setTab} onMusic={() => setMusicPanelOpen(true)} />}
         {tab === "wallet" && <SiteWalletAdmin />}
         {tab === "products" && (
