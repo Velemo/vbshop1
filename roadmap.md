@@ -1,4 +1,8 @@
 # Current tasks
+- [ ] Show recipient name in transfer confirmation using a safe recipient lookup.
+- [ ] Present ADM entry as a function grid, preserving existing screens.
+- [ ] Add persistent light/dark choice to Profile.
+- [ ] Add treasury accounting, purchase credits and funded recharge generation; verify financial invariants.
 - [x] Enforce one active P2P purchase per buyer and preserve previous orders.
 - [x] Show P2P receipts and seller approval/cancellation directly in chat; synchronize buyer, seller and ADM.
 - [ ] Verify a new P2P payment across buyer and seller accounts; blocked by no approved buyer test session and no permission to alter existing financial orders.

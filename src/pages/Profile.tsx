@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText, MessageCircle } from "lucide-react";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText, MessageCircle, Moon, Sun } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +12,7 @@ import { InstallAppTile, NotificationsTile } from "@/components/ProfileAppAction
 
 
 const Profile = () => {
+  const { theme, setTheme } = useSettings();
   const { session } = useAuth();
   const navigate = useNavigate();
   const { balance, tickets, refresh } = useWallet();
@@ -209,6 +211,13 @@ const Profile = () => {
         </div>
       )}
       {!session && <Link to="/settings" className="mt-6 flex items-center gap-3 text-sm text-muted-foreground hover:text-primary"><Settings size={20} /> Definições</Link>}
+      <section className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border py-4">
+        <h2 className="text-sm font-medium">Aparência</h2>
+        <div className="flex gap-1" role="group" aria-label="Tema do site">
+          <Button variant={theme === "light" ? "default" : "outline"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><Sun size={16} className="mr-2" />Claro</Button>
+          <Button variant={theme === "dark" ? "default" : "outline"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><Moon size={16} className="mr-2" />Dark</Button>
+        </div>
+      </section>
     </main>
   );
 };
