@@ -106,6 +106,13 @@
       "when": 1794123883883,
       "tag": "0014_p2p_daily_limit_and_receipt_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794123986325,
+      "tag": "0015_referral_missions_and_first_deposit_rewards",
+      "breakpoints": true
     }
   ]
 }
