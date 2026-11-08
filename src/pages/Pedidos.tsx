@@ -9,6 +9,7 @@ import { uploadWithProgress } from "@/lib/upload";
 import { formatVb } from "@/hooks/useWallet";
 import { toast } from "sonner";
 import { isActiveP2POrder, uniqueP2POrders } from "@/lib/p2p-orders";
+import P2PReceiptDeadline from "@/components/P2PReceiptDeadline";
 
 type Order = {
   id: string;
@@ -140,6 +141,7 @@ function OrderCard({ order, side, onChanged, adminView = false }: { order: Order
       </div>
 
       {order.receipt_note && <p className="mt-2 text-sm text-muted-foreground">Nota: {order.receipt_note}</p>}
+      {order.status === "pending" && <P2PReceiptDeadline createdAt={order.created_at} />}
       {order.receipt_image_url && (
         <a href={order.receipt_image_url} target="_blank" rel="noreferrer" className="mt-2 block">
           <img src={order.receipt_image_url} alt="Comprovativo" className="max-h-40 rounded-lg border border-border object-contain" />
@@ -257,6 +259,7 @@ function ChatView({ userId, adminView, title, vip, avatar, onBack }: { userId: s
 
   const load = useCallback(async () => {
     const version = ++loadVersion.current;
+    await supabase.rpc("p2p_purchase_status");
     const [m, o] = await Promise.all([
       (supabase as any).from("chat_messages").select("*").eq("user_id", userId).order("created_at", { ascending: true }).limit(500),
       (supabase as any).from("p2p_orders").select("*").or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order("created_at", { ascending: false }),

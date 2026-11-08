@@ -589,6 +589,96 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_accounts: {
+        Row: {
+          code: string
+          created_at: string
+          pending_balance: number
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          pending_balance?: number
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          pending_balance?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_links: {
+        Row: {
+          invitee_id: string
+          linked_at: string
+          referrer_id: string
+          rewarded_at: string | null
+        }
+        Insert: {
+          invitee_id: string
+          linked_at?: string
+          referrer_id: string
+          rewarded_at?: string | null
+        }
+        Update: {
+          invitee_id?: string
+          linked_at?: string
+          referrer_id?: string
+          rewarded_at?: string | null
+        }
+        Relationships: []
+      }
+      referral_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invitee_id: string | null
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invitee_id?: string | null
+          kind: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invitee_id?: string | null
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_settings: {
+        Row: {
+          channel_url: string
+          id: number
+          message: string
+          updated_at: string
+        }
+        Insert: {
+          channel_url?: string
+          id?: number
+          message?: string
+          updated_at?: string
+        }
+        Update: {
+          channel_url?: string
+          id?: number
+          message?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string
@@ -1049,6 +1139,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_referral_dashboard: { Args: never; Returns: Json }
       admin_reset_roulette: { Args: never; Returns: undefined }
       admin_roulette_stats: {
         Args: never
@@ -1147,7 +1238,12 @@ export type Database = {
         Args: { _amount_vb: number; _offer_id: string }
         Returns: string
       }
+      p2p_expire_unpaid_orders: {
+        Args: { _participant?: string }
+        Returns: number
+      }
       p2p_online_sellers: { Args: never; Returns: string[] }
+      p2p_purchase_status: { Args: never; Returns: Json }
       p2p_reject_order: { Args: { _order_id: string }; Returns: undefined }
       p2p_report_dispute: {
         Args: { _order_id: string; _reason: string }
@@ -1169,6 +1265,9 @@ export type Database = {
         }[]
       }
       redeem_code: { Args: { _code: string }; Returns: number }
+      referral_dashboard: { Args: never; Returns: Json }
+      referral_link: { Args: { _code: string }; Returns: undefined }
+      referral_withdraw: { Args: never; Returns: number }
       save_contact: {
         Args: { _email: string; _name: string; _phone: string }
         Returns: undefined

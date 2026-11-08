@@ -1,4 +1,6 @@
 # Current tasks
+- [ ] Enforce five P2P orders per Maputo day and automatic cancellation after 15 minutes without receipt; preserve receipt approval flow.
+- [ ] Implement referral rewards after P2P rules; recover confirmed requirements before implementation.
 - [x] Show recipient name in transfer confirmation using a safe recipient lookup; verified with a real recipient without transferring funds.
 - [x] Present ADM entry as a function grid, preserving existing screens; checked desktop/mobile.
 - [x] Add persistent light/dark choice to Profile; verified after reload.
