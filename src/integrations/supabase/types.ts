@@ -1147,7 +1147,12 @@ export type Database = {
         Args: { _amount_vb: number; _offer_id: string }
         Returns: string
       }
+      p2p_expire_unpaid_orders: {
+        Args: { _participant?: string }
+        Returns: number
+      }
       p2p_online_sellers: { Args: never; Returns: string[] }
+      p2p_purchase_status: { Args: never; Returns: Json }
       p2p_reject_order: { Args: { _order_id: string }; Returns: undefined }
       p2p_report_dispute: {
         Args: { _order_id: string; _reason: string }
