@@ -9,6 +9,7 @@ import { uploadWithProgress } from "@/lib/upload";
 import { toast } from "sonner";
 import { ACTIVE_P2P_STATUSES } from "@/lib/p2p-orders";
 import { useIsVip } from "@/hooks/useIsVip";
+import P2PReceiptDeadline from "@/components/P2PReceiptDeadline";
 
 type Offer = {
   id: string;
@@ -35,7 +36,7 @@ function BuyPanel({ offer, minBuy, onDone }: { offer: Offer; minBuy: number; onD
   const navigate = useNavigate();
   const { session } = useAuth();
   const [qty, setQty] = useState("");
-  const [order, setOrder] = useState<{ id: string; total_mt: number } | null>(null);
+  const [order, setOrder] = useState<{ id: string; total_mt: number; created_at: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [note, setNote] = useState("");
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
@@ -53,7 +54,9 @@ function BuyPanel({ offer, minBuy, onDone }: { offer: Offer; minBuy: number; onD
     const { data, error } = await (supabase as any).rpc("p2p_create_order", { _offer_id: offer.id, _amount_vb: value });
     setCreating(false);
     if (error) { toast.error(error.message || "Não foi possível reservar."); return; }
-    setOrder({ id: data as string, total_mt: Number((value * Number(offer.price_per_vb)).toFixed(2)) });
+    const { data: saved } = await supabase.from("p2p_orders").select("id,total_mt,created_at").eq("id", data as string).single();
+    if (!saved) { onDone(); return; }
+    setOrder(saved);
   };
 
   const uploadReceipt = async (file?: File) => {
@@ -110,6 +113,7 @@ function BuyPanel({ offer, minBuy, onDone }: { offer: Offer; minBuy: number; onD
   return (
     <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
       <p className="text-sm font-semibold">Passo 2 · Pagamento ao vendedor</p>
+      <P2PReceiptDeadline createdAt={order.created_at} onExpired={onDone} />
       <p className="mt-1 text-sm">Total a pagar: <span className="font-bold">{fmtMt(order.total_mt)} MT</span> por {formatVb(Number(qty))}</p>
       <div className="mt-3 space-y-2 rounded-xl border border-border bg-background p-3 text-sm">
         {offer.mpesa_number && <p><span className="font-semibold">M-Pesa:</span> {offer.mpesa_number}{offer.mpesa_name ? ` — ${offer.mpesa_name}` : ""}</p>}
@@ -224,19 +228,25 @@ export default function P2P() {
   const [showCreate, setShowCreate] = useState(false);
   const [buying, setBuying] = useState<Offer | null>(null);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const [minBuy, setMinBuy] = useState(0);
   const [minPrice, setMinPrice] = useState(0);
   const [onlineSellers, setOnlineSellers] = useState<Set<string>>(new Set());
   const vipActive = useIsVip();
 
   const load = useCallback(async () => {
+    if (session) {
+      const { data: quota, error: quotaError } = await supabase.rpc("p2p_purchase_status");
+      if (quotaError) { setDailyRemaining(null); setLoading(false); toast.error("Não foi possível verificar o limite diário."); return; }
+      setDailyRemaining(Number((quota as { remaining: number }).remaining));
+    }
     const [{ data, error }, current, settings, online] = await Promise.all([
       supabase.from("p2p_offers").select("*").order("created_at", { ascending: false }),
       session ? supabase.from("p2p_orders").select("id").eq("buyer_id", session.user.id).in("status", [...ACTIVE_P2P_STATUSES]).maybeSingle() : Promise.resolve({ data: null, error: null }),
       (supabase as any).from("p2p_settings").select("min_buy_vb,min_price_per_vb").eq("id", 1).maybeSingle(),
       (supabase as any).rpc("p2p_online_sellers"),
     ]);
-    if (error || current.error) { toast.error("Não foi possível atualizar os pedidos P2P."); return; }
+    if (error || current.error) { setLoading(false); toast.error("Não foi possível atualizar os pedidos P2P."); return; }
     setActiveOrderId(current.data?.id ?? null);
     setMinBuy(Number(settings.data?.min_buy_vb || 0));
     setMinPrice(Number(settings.data?.min_price_per_vb || 0));
@@ -319,6 +329,7 @@ export default function P2P() {
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold">Ofertas disponíveis</h2>
+        {session && dailyRemaining !== null && <p className="mb-3 text-sm text-muted-foreground">{dailyRemaining} de 5 pedidos disponíveis hoje · Reinicia à meia-noite de Maputo</p>}
         {activeOrderId && <p className="mb-3 text-sm text-muted-foreground">Já tem um pedido ativo. <Link to="/pedidos" className="text-primary underline">Abrir conversa</Link></p>}
         {loading ? <p className="text-sm text-muted-foreground">A carregar ofertas...</p>
           : offers.length === 0 ? <div className="rounded-2xl border border-border p-5 text-sm text-muted-foreground">Ainda não existem ofertas disponíveis.</div>
@@ -342,7 +353,7 @@ export default function P2P() {
                       {session && o.seller_id === session.user.id ? (
                         <p className="mt-3 text-xs text-muted-foreground">Esta é a sua oferta.</p>
                       ) : (
-                        <Button className="mt-3 w-full" onClick={() => setBuying(o)} disabled={loading || !!activeOrderId || available(o) <= 0}>{available(o) <= 0 ? "Esgotada" : activeOrderId ? "Pedido ativo" : "Comprar"}</Button>
+                         <Button className="mt-3 w-full" onClick={() => setBuying(o)} disabled={loading || !!activeOrderId || (session !== null && (dailyRemaining === null || dailyRemaining <= 0)) || available(o) <= 0}>{available(o) <= 0 ? "Esgotada" : activeOrderId ? "Pedido ativo" : dailyRemaining === 0 ? "Limite diário atingido" : "Comprar"}</Button>
                       )}
                     </>
                   )}
