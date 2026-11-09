@@ -23,6 +23,7 @@ import SendVb from "./pages/SendVb";
 import P2P from "./pages/P2P";
 import Trend from "./pages/Trend";
 import Pedidos from "./pages/Pedidos";
+import { ReferralInvitePrompt } from "./components/ReferralRewards";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => (
             </Routes>
             </div>
             <BottomNav />
+            <ReferralInvitePrompt />
             </div>
           </AuthProvider>
         </BrowserRouter>

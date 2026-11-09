@@ -1,8 +1,8 @@
-import { ArrowLeftRight, BarChart3, CircleDollarSign, Dices, Image, MessageSquareText, Music, Package, Ticket, Users } from "lucide-react";
+import { ArrowLeftRight, BarChart3, CircleDollarSign, Dices, Gift, Image, MessageSquareText, Music, Package, Ticket, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-export type AdminTab = "products" | "users" | "visits" | "ad" | "roleta" | "codes" | "p2p" | "wallet";
+export type AdminTab = "products" | "users" | "visits" | "ad" | "roleta" | "codes" | "p2p" | "wallet" | "referrals";
 export const adminFunctions = [
   { id: "products", label: "Produtos", icon: Package },
   { id: "roleta", label: "Roleta", icon: Dices },
@@ -10,6 +10,7 @@ export const adminFunctions = [
   { id: "users", label: "Utilizadores", icon: Users },
   { id: "p2p", label: "P2P", icon: ArrowLeftRight },
   { id: "wallet", label: "Carteira do Site", icon: CircleDollarSign },
+  { id: "referrals", label: "Indicações e recompensas", icon: Gift },
   { id: "codes", label: "Códigos", icon: Ticket },
   { id: "visits", label: "Visitantes", icon: BarChart3 },
 ] as const;

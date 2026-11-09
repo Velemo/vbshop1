@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import RouletteAdmin from "@/components/admin/RouletteAdmin";
 import AdminHome, { type AdminTab } from "@/components/admin/AdminHome";
 import SiteWalletAdmin from "@/components/admin/SiteWalletAdmin";
+import ReferralAdmin from "@/components/admin/ReferralAdmin";
 import { filterAndSortUsers, type AdminUser, type UserSort } from "@/lib/admin-users";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
@@ -516,6 +517,7 @@ const Admin = () => {
       <main className={tab ? "w-full px-4 py-6" : "max-w-6xl mx-auto px-4 py-6"}>
         {!tab && <AdminHome onSelect={setTab} onMusic={() => setMusicPanelOpen(true)} />}
         {tab === "wallet" && <SiteWalletAdmin />}
+        {tab === "referrals" && <ReferralAdmin />}
         {tab === "products" && (
           <>
             <div className="flex justify-between items-center mb-4">
