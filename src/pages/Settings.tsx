@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Sparkles, Square, Check, Shield, Mail, LogOut } from "lucide-react";
+import { ArrowLeft, Sparkles, Square, Check, Shield, Mail, LogOut, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useSettings, SiteMode } from "@/contexts/SettingsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -21,7 +22,7 @@ const options: { value: SiteMode; title: string; desc: string; icon: typeof Spar
 ];
 
 const Settings = () => {
-  const { mode, setMode } = useSettings();
+  const { mode, setMode, theme, setTheme } = useSettings();
   const { isAdmin, session, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -49,12 +50,18 @@ const Settings = () => {
         {session && (
           <section className="rounded-2xl border border-border bg-card p-4 space-y-2">
             <h2 className="font-display text-sm font-semibold">Dados de contacto</h2>
-            <p className="text-xs text-muted-foreground">Nome: 1 alteração a cada 30 dias. Contacto e e-mail: 1 alteração a cada 15 dias.</p>
+            <p className="text-xs text-muted-foreground">Nome, contacto e e-mail: 1 alteração a cada 15 dias.</p>
             <ContactForm />
           </section>
         )}
 
-        <p className="text-sm text-muted-foreground">Escolha como o site deve aparecer neste dispositivo.</p>
+        <section className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-4">
+          <h2 className="font-display text-sm font-semibold">Aparência</h2>
+          <div className="flex gap-1" role="group" aria-label="Tema do site">
+            <Button variant={theme === "light" ? "default" : "outline"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><Sun size={16} className="mr-2" />Claro</Button>
+            <Button variant={theme === "dark" ? "default" : "outline"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><Moon size={16} className="mr-2" />Dark</Button>
+          </div>
+        </section>
         {options.map(o => {
           const Icon = o.icon;
           const active = mode === o.value;

@@ -14,3 +14,4 @@
 - Resolve transfer recipients through an authenticated exact-public-ID RPC exposing only the recipient ID and name, because profiles are owner-only.
 - Keep initial ADM navigation in a function grid and its operational views intact; persist appearance independently from animation mode in the shared settings provider.
 - Route referral linking, first-deposit bonuses and withdrawals through the existing protected RPCs; expose shared referral panels in Profile and ADM without client-side balance mutations.
+- Guard displayed-name changes with a server-managed profile timestamp and database trigger; client edit dialogs show the same cooldown without being the source of enforcement.

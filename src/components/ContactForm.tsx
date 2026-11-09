@@ -30,7 +30,7 @@ const ContactForm = ({ onSaved, compact }: { onSaved?: () => void; compact?: boo
 
   const now = new Date();
   const lock = (at: string | undefined, days: number) => (at && nextChange(at, days) > now ? nextChange(at, days) : null);
-  const nameLock = contact ? lock(contact.name_changed_at, 30) : null;
+  const nameLock = contact ? lock(contact.name_changed_at, 15) : null;
   const phoneLock = contact ? lock(contact.phone_changed_at, 15) : null;
   const emailLock = contact ? lock(contact.email_changed_at, 15) : null;
 
@@ -53,7 +53,7 @@ const ContactForm = ({ onSaved, compact }: { onSaved?: () => void; compact?: boo
     <div className={compact ? "space-y-2" : "space-y-3"}>
       <label className="block text-xs font-medium">Nome
         <input value={name} maxLength={80} disabled={!!nameLock} onChange={e => setName(e.target.value)} className={inp} />
-        {hint(nameLock, 30)}
+        {hint(nameLock, 15)}
       </label>
       <label className="block text-xs font-medium">Número de contacto
         <input value={phone} maxLength={20} inputMode="tel" placeholder="+258 84 000 0000" disabled={!!phoneLock} onChange={e => setPhone(e.target.value)} className={inp} />
