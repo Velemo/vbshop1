@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { isReferralCode, canLinkReferral, canWithdrawReferral, referralShareMessage, REFERRAL_INVITEE_BONUS, REFERRAL_REFERRER_BONUS } from "@/lib/referrals";
 describe("Referral mission rules", () => {
+  it("shares the custom domain even from the preview", () => {
+    const text = referralShareMessage("Visite {SITE}", "https://preview.example", "https://whatsapp.com/channel/test", "MV742K9");
+    expect(text).toContain("https://marchavb.com");
+    expect(text).not.toContain("https://preview.example");
+  });
   it("uses MV + three digits + a letter + one digit", () => { expect(isReferralCode("MV742K9")).toBe(true); expect(isReferralCode("MV74299")).toBe(false); expect(isReferralCode("mv742K9")).toBe(false); });
   it("limits linking to the first 15 minutes", () => { const born = "2026-11-08T07:00:00Z"; expect(canLinkReferral(born, Date.parse("2026-11-08T07:14:59Z"), false, false)).toBe(true); expect(canLinkReferral(born, Date.parse("2026-11-08T07:15:00Z"), false, false)).toBe(false); });
   it("blocks a second reference", () => { expect(canLinkReferral("2026-11-08T07:00:00Z", Date.parse("2026-11-08T07:01:00Z"), true, false)).toBe(false); });

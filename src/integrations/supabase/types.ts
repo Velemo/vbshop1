@@ -503,6 +503,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          name_changed_at: string | null
           updated_at: string
           user_code: string | null
           user_id: string
@@ -513,6 +514,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          name_changed_at?: string | null
           updated_at?: string
           user_code?: string | null
           user_id: string
@@ -523,6 +525,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          name_changed_at?: string | null
           updated_at?: string
           user_code?: string | null
           user_id?: string

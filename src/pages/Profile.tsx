@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText, MessageCircle, Moon, Sun } from "lucide-react";
-import { useSettings } from "@/contexts/SettingsContext";
+import { Heart, Settings, UserRound, Camera, Send, ArrowLeftRight, Crown, TrendingUp, Music, MessageSquareText, MessageCircle, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { nextProfileNameChange } from "@/lib/profile-name";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
@@ -13,7 +14,6 @@ import { ReferralRewardsTile } from "@/components/ReferralRewards";
 
 
 const Profile = () => {
-  const { theme, setTheme } = useSettings();
   const { session } = useAuth();
   const navigate = useNavigate();
   const { balance, tickets, refresh } = useWallet();
@@ -22,6 +22,11 @@ const Profile = () => {
   const [userCode, setUserCode] = useState<string | null>(null);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
+  const [savedName, setSavedName] = useState("");
+  const [nameChangedAt, setNameChangedAt] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const nameLock = nextProfileNameChange(nameChangedAt);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isVip, setIsVip] = useState(false);
   const [vipExpires, setVipExpires] = useState<string | null>(null);
@@ -33,9 +38,11 @@ const Profile = () => {
 
   useEffect(() => {
     if (!session) return;
-    (supabase as any).from("profiles").select("display_name,avatar_url,user_code").eq("user_id", session.user.id).maybeSingle()
+    (supabase as any).from("profiles").select("display_name,avatar_url,user_code,name_changed_at").eq("user_id", session.user.id).maybeSingle()
       .then(({ data }: any) => {
-        if (data?.display_name) setName(data.display_name);
+        const displayName = data?.display_name || session.user.user_metadata?.full_name || "";
+        setName(displayName); setSavedName(displayName);
+        setNameChangedAt(data?.name_changed_at ?? null);
         if (data?.user_code) setUserCode(data.user_code);
         if (data?.avatar_url) setProfileAvatar(data.avatar_url);
       });
@@ -50,7 +57,7 @@ const Profile = () => {
   const saveName = async () => {
     if (!session) return;
     const cleanName = name.trim().slice(0, 60);
-    if (!cleanName) { toast.error("Introduza um nome."); return; }
+    if (cleanName.length < 2) { toast.error("Introduza um nome com pelo menos 2 caracteres."); return; }
     setSavingName(true);
     const { data: existing, error: readError } = await (supabase as any).from("profiles").select("id").eq("user_id", session.user.id).maybeSingle();
     if (readError) { setSavingName(false); toast.error("Não foi possível consultar o perfil."); return; }
@@ -59,7 +66,11 @@ const Profile = () => {
       ? await (supabase as any).from("profiles").update(profileValues).eq("user_id", session.user.id)
       : await (supabase as any).from("profiles").insert({ user_id: session.user.id, ...profileValues });
     setSavingName(false);
-    if (result.error) { toast.error("Não foi possível guardar o nome no perfil."); return; }
+    if (result.error) { toast.error(result.error.message); return; }
+    const { data: updated } = await supabase.from("profiles").select("display_name,name_changed_at").eq("user_id", session.user.id).maybeSingle();
+    setSavedName(updated?.display_name ?? cleanName);
+    setNameChangedAt(updated?.name_changed_at ?? null);
+    setEditingName(false);
     await supabase.auth.updateUser({ data: { full_name: cleanName, name: cleanName } });
     toast.success("Nome atualizado!");
   };
@@ -119,26 +130,21 @@ const Profile = () => {
 
   return (
     <main className="mx-auto max-w-xl px-4 pt-0 pb-28 min-h-screen">
-      <div className="mt-8 flex flex-col items-center gap-4 border-b border-border pb-6">
+      <div className="mt-6 flex items-center gap-4 border-b border-border pb-5">
         {session ? (
           <>
-            <button type="button" onClick={() => fileInput.current?.click()} disabled={uploadingAvatar} aria-label="Alterar foto de perfil" className="relative grid size-24 place-items-center overflow-hidden rounded-full bg-secondary text-primary ring-2 ring-border hover:ring-primary disabled:opacity-60">
+            <Button type="button" variant="ghost" onClick={() => fileInput.current?.click()} disabled={uploadingAvatar} aria-label="Alterar foto de perfil" className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary p-0 text-primary ring-2 ring-border hover:ring-primary disabled:opacity-60">
               {avatarUrl ? <img src={avatarUrl} alt="Foto de perfil" className="size-full object-cover" /> : <UserRound size={38} />}
-              <span className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1 bg-black/65 py-1 text-xs text-white"><Camera size={13} /> {uploadingAvatar ? "A carregar..." : "Alterar"}</span>
-            </button>
+              <span className="absolute bottom-0 inset-x-0 flex items-center justify-center bg-background/85 py-1 text-foreground"><Camera size={12} /></span>
+            </Button>
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={e => { void uploadAvatar(e.target.files?.[0]); e.currentTarget.value = ""; }} />
-            <div className="w-full max-w-sm">
-              <div className="mb-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-center">
-                <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">ID do utilizador {isVip && <VipBadge />}</p>
-
-                <p className="font-mono text-base font-semibold tracking-wide">{userCode || "A gerar ID..."}</p>
-              </div>
-              <label htmlFor="profile-name" className="mb-1 block text-sm font-medium">Nome</label>
-              <div className="flex gap-2">
-                <input id="profile-name" value={name} onChange={e => setName(e.target.value)} maxLength={60} placeholder="O seu nome" className="min-w-0 flex-1 rounded-lg border border-border bg-background p-2 text-sm" />
-                <Button onClick={saveName} disabled={savingName}>{savingName ? "A guardar..." : "Guardar"}</Button>
-              </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2"><h1 className="break-words font-display text-lg font-semibold">{savedName || "Utilizador"}</h1>{isVip && <VipBadge />}</div>
+              <p className="mt-1 text-xs text-muted-foreground">ID do utilizador</p>
+              <p className="break-all font-mono text-sm font-semibold">{userCode || "A gerar ID..."}</p>
             </div>
+            <Button variant="ghost" size="icon" aria-label="Editar nome" title="Editar nome" className="shrink-0" onClick={() => { setName(savedName); setEditingName(true); }}><Pencil size={18} /></Button>
+            <Dialog open={editingName} onOpenChange={setEditingName}><DialogContent className="w-[calc(100%-2rem)]"><DialogTitle>Editar nome</DialogTitle><DialogDescription>{nameLock ? `Pode alterar novamente em ${nameLock.toLocaleString("pt-PT")}.` : "Pode alterar o nome uma vez a cada 15 dias."}</DialogDescription><label htmlFor="profile-name" className="text-sm font-medium">Nome</label><input id="profile-name" value={name} disabled={Boolean(nameLock)} onChange={e => setName(e.target.value)} maxLength={60} className="rounded-lg border border-border bg-background p-3 text-sm" /><Button onClick={saveName} disabled={savingName || Boolean(nameLock) || name.trim() === savedName}>{savingName ? "A guardar..." : "Guardar"}</Button></DialogContent></Dialog>
           </>
         ) : (
           <div className="grid size-24 place-items-center rounded-full bg-secondary text-primary"><UserRound size={38} /></div>
@@ -157,7 +163,7 @@ const Profile = () => {
               <Button onClick={redeem}>Recarregar</Button>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Link to="/send-vb" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <Send size={28} strokeWidth={1.8} />
               <span className="leading-tight">Enviar vb$</span>
@@ -166,8 +172,11 @@ const Profile = () => {
               <ArrowLeftRight size={28} strokeWidth={1.8} />
               <span className="leading-tight">P2P — Comprar vb$</span>
             </Link>
-            <InstallAppTile />
             <NotificationsTile userId={session.user.id} />
+          </div>
+          <Button variant="ghost" className="w-full justify-between border-y border-border py-6" aria-expanded={showMore} aria-controls="profile-more-options" onClick={() => { setShowMore(v => !v); setShowVipDetails(false); }}><span>{showMore ? "Recolher opções" : "Ver mais opções"}</span>{showMore ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</Button>
+          {showMore && <div id="profile-more-options" className="grid grid-cols-3 gap-2">
+            <InstallAppTile />
             <ReferralRewardsTile />
             <a href="https://whatsapp.com/channel/0029VbBl40G6BIEnrgYGsl2Z" target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <MessageCircle size={28} strokeWidth={1.8} />
@@ -177,23 +186,23 @@ const Profile = () => {
               <Heart size={28} strokeWidth={1.8} />
               <span className="leading-tight">Lista de desejos</span>
             </Link>
-            <button type="button" onClick={() => setShowVipDetails(v => !v)} className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
+            <Button variant="ghost" type="button" onClick={() => setShowVipDetails(v => !v)} className="h-auto flex min-w-0 flex-col items-center justify-start gap-2 whitespace-normal rounded-lg px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <Crown size={28} strokeWidth={1.8} className={isVip ? "text-amber-400" : ""} />
               <span className="leading-tight">{isVip ? "Zona VIP ativa" : vipLoading ? "A ativar..." : "Zona VIP"}</span>
-            </button>
+            </Button>
             <Link to="/trend" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm">
               <TrendingUp size={28} strokeWidth={1.8} />
               <span className="leading-tight">Trend</span>
             </Link>
-            <button type="button" onClick={() => window.dispatchEvent(new Event("vbshop:toggle-site-music"))} className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm" aria-label="Música">
+            <Button variant="ghost" type="button" onClick={() => window.dispatchEvent(new Event("vbshop:toggle-site-music"))} className="h-auto flex min-w-0 flex-col items-center justify-start gap-2 whitespace-normal rounded-lg px-1 py-4 text-center text-xs font-medium hover:bg-muted hover:text-primary sm:text-sm" aria-label="Música">
               <Music size={28} strokeWidth={1.8} />
               <span className="leading-tight">Música</span>
-            </button>
+            </Button>
             <Link to="/pedidos" className="flex min-w-0 flex-col items-center justify-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-1 py-4 text-center text-xs font-semibold text-primary hover:bg-primary/10 sm:text-sm">
               <MessageSquareText size={28} strokeWidth={1.8} />
               <span className="leading-tight">Pedidos</span>
             </Link>
-          </div>
+          </div>}
           {showVipDetails && <section className="mt-3 rounded-2xl border border-amber-400/50 bg-amber-400/5 p-4">
             <div className="flex items-center gap-2 font-semibold"><Crown size={20} className="text-amber-400" /> Zona VIP {isVip && <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-500">VIP</span>}</div>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -213,13 +222,6 @@ const Profile = () => {
         </div>
       )}
       {!session && <Link to="/settings" className="mt-6 flex items-center gap-3 text-sm text-muted-foreground hover:text-primary"><Settings size={20} /> Definições</Link>}
-      <section className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border py-4">
-        <h2 className="text-sm font-medium">Aparência</h2>
-        <div className="flex gap-1" role="group" aria-label="Tema do site">
-          <Button variant={theme === "light" ? "default" : "outline"} aria-pressed={theme === "light"} onClick={() => setTheme("light")}><Sun size={16} className="mr-2" />Claro</Button>
-          <Button variant={theme === "dark" ? "default" : "outline"} aria-pressed={theme === "dark"} onClick={() => setTheme("dark")}><Moon size={16} className="mr-2" />Dark</Button>
-        </div>
-      </section>
     </main>
   );
 };
