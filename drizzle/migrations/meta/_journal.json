@@ -113,6 +113,13 @@
       "when": 1794123986325,
       "tag": "0015_referral_missions_and_first_deposit_rewards",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794185740421,
+      "tag": "0016_profile_name_fifteen_day_limit",
+      "breakpoints": true
     }
   ]
 }
