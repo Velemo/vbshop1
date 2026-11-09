@@ -1,6 +1,7 @@
 # Current tasks
-- [ ] Enforce five P2P orders per Maputo day and automatic cancellation after 15 minutes without receipt; preserve receipt approval flow.
-- [ ] Complete referral rewards integration in Profile and ADM; verify authenticated panels and protected reward rules.
+- [x] Enforce five P2P orders per Maputo day and automatic cancellation after 15 minutes without receipt; existing implementation and 11 rule tests pass.
+- [x] Integrate referral rewards in Profile and ADM; authenticated desktop/mobile panels, WhatsApp message, ADM save/readback and server rejection below withdrawal minimum and after linking deadline verified; 8 rule tests pass.
+- [ ] Verify new-account reference → first positive deposit → both bonuses → successful withdrawal; blocked by no authorization to create financial test activity or spend real balances.
 - [x] Show recipient name in transfer confirmation using a safe recipient lookup; verified with a real recipient without transferring funds.
 - [x] Present ADM entry as a function grid, preserving existing screens; checked desktop/mobile.
 - [x] Add persistent light/dark choice to Profile; verified after reload.
